@@ -57,9 +57,12 @@ namespace JmaXmlClient.Models
                     }
                 }
 
+                //府県天気予報
                 await UpsertData(vpfg50List, "JmaVpfg50", "JsonVpfg50", JsonVpfg50);
-                await UpsertData(vpfd50List, "JmaVpfd50", "JsonVpfd50", JsonVpfw50);
-                await UpsertData(vpfw50List, "JmaVpfw50", "JsonVpfw50", JsonCondition);
+                //府県週間天気予報
+                await UpsertData(vpfw50List, "JmaVpfw50", "JsonVpfw50", JsonVpfw50);
+                //府県天気概況
+                await UpsertData(vpfd50List, "JmaVpfd50", "JsonVpfd50", JsonCondition);
                 await UpsertData(vpcw50List, "JmaVpcw50", "JsonVpcw50", JsonCondition);
                 await UpsertData(vpzw50List, "JmaVpzw50", "JsonVpzw50", JsonCondition);
 
