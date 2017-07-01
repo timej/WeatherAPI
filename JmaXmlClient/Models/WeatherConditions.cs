@@ -28,9 +28,12 @@ namespace JmaXmlClient.Models
                 var headline = xe.Descendants(Utils.XmlnsJmxIb + "Headline").First();
                 Headline = headline.Element(Utils.XmlnsJmxIb + "Text").Value;
 
-                var targetArea = xe.Descendants(Utils.XmlnsJmxEx + "TargetArea").First();
-                AreaCode = int.Parse(targetArea.Element(Utils.XmlnsJmxEx + "Code").Value);
-                AreaName = targetArea.Element(Utils.XmlnsJmxEx + "Name").Value;
+                var targetArea = xe.Descendants(Utils.XmlnsJmxEx + "TargetArea").FirstOrDefault();
+                if (targetArea != null)
+                {
+                    AreaCode = int.Parse(targetArea.Element(Utils.XmlnsJmxEx + "Code").Value);
+                    AreaName = targetArea.Element(Utils.XmlnsJmxEx + "Name").Value;
+                }
 
                 var notice = xe.Descendants(Utils.XmlnsJmxEx + "Notice").First();
                 Comment = notice.Value;

@@ -10,8 +10,6 @@ namespace JmaXmlClient.Models
 {
     public class JmaXmlRegular
     {
-        public const string KindForecastXml = "JmaForecastXml";
-        public const string KindForecastJson = "JmaForecastJson";
         public static async Task RegularAsync()
         {
             await Utils.WriteLog("予報開始");
