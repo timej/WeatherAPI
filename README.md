@@ -4,7 +4,10 @@
 気象庁の防災情報XMLは無料で利用も自由なのですが、複雑で誰でも使えるようなものではありません。
 それだったら、もう少し使い易いものにしていこうと思って始めました。
 
-### Livedoor Weather Web Service 互換のAPIのベータ版公開しています
+### Livedoor の「お天気Webサービス」互換のAPIのベータ版公開しています
+お天気Webサービス（Livedoor Weather Web Service / LWWS）互換のAPIで、全国142カ所の天気予報と府県天気概況を提供しています。
+お天気Webサービスのプロパティのうち、pinpointLocation 及び copyright 以外のものを提供しています。
+プロパティに関しては、気象庁の天気予報、週間天気予報のホームページにある内容であれば追加できますので Issues からリクエストしてください。
 
 JSONデータをリクエストする際のベースとなる基本URLは以下になります。  
 http://weather2.time-j.net/wws/v1
@@ -20,6 +23,8 @@ http://weather2.time-j.net/wws/v1?city=360010
 ※このサービスも無保証です。
 
 ### JmaXmlプログラム（アルファ版）について
+気象庁が公開している「気象庁防災情報XMLフォーマット形式電文」を取得して、Jsonデータに変換するプログラムです。まだ、開発の初期段階です。
+
 - JmaXmlServer XML電文（PUSH型）の更新情報を受け取るためのSubscriberです。
 - JmaXmlClient 受信したXML電文を元に天気予報等のXMLを取得し、Jsonデータに変換するコンソールアプリケーションです。
 
