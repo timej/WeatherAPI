@@ -12,13 +12,17 @@ namespace JmaXmlClient.Models
         public static string DataPath { get; private set; }
         public static Dictionary<string, int> PublishingOffice { get; private set; }
         public static string ProjectId { get; private set; }
+        public static bool IsOutputToPostgreSQL { get; private set; }
+        public static bool IsOutputToDatastore { get; private set; }
         public static void Init(string basePath, IConfigurationRoot configuration)
         {
             DataPath = Path.Combine(basePath, "App_Data");
             string path = Path.Combine(DataPath, "logs");
             if (!Directory.Exists(path))
                 Directory.CreateDirectory(path);
-            ProjectId = configuration.GetSection("Google")["ProjectId"];
+            ProjectId = configuration["Google:ProjectId"];
+            IsOutputToPostgreSQL = bool.Parse(configuration["Output:PostgreSQL"]);
+            IsOutputToDatastore = bool.Parse(configuration["Output:Datastore"]);
 
             PublishingOffice = new Dictionary<string, int>()
             {
