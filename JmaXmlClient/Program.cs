@@ -11,8 +11,9 @@ using System.Runtime.InteropServices;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
-using JmaXmlClient.Data;
+using JmaXml.Common.Data;
 using Npgsql;
+using JmaXml.Common;
 
 namespace JmaXmlClient
 {
@@ -63,10 +64,10 @@ namespace JmaXmlClient
 #endif
             //天気予報等
             if(args.Contains("-r"))
-                JmaXmlRegular.RegularAsync(_forecastContext).GetAwaiter().GetResult();
+                JmaXmlRegularTask.RegularAsync(_forecastContext).GetAwaiter().GetResult();
             //警報・注意報等
             else if(args.Contains("-e"))
-                JmaXmlExtra.ExtraAsync(_forecastContext).GetAwaiter().GetResult();
+                JmaXmlExtraTask.ExtraAsync(_forecastContext).GetAwaiter().GetResult();
             //XMLデータから天気予報のJsonデータの一括作成
             else if (args.Contains("-a"))
                 MakeJsonData().GetAwaiter().GetResult();
@@ -89,7 +90,7 @@ namespace JmaXmlClient
             await Utils.WriteLog("開始");
 #endif
             int office = 360;
-            var datastore = new Datastore("JmaVpfg50");
+            var datastore = new JmaDatastore(AppIni.ProjectId, "JmaVpfg50");
             string xml = await datastore.GetJmaXmlAsync(office);
             var forecast = new JmaForecast(xml, office);
             
@@ -100,9 +101,9 @@ namespace JmaXmlClient
 
         static async Task DeleteData()
         {
-            var datastore = new Datastore("JmaXmlExtra");
+            var datastore = new JmaDatastore(AppIni.ProjectId, "JmaXmlExtra");
             await datastore.DeleteFeedsAsync("JmaXmlExtra");
-            var datastore2 = new Datastore("JmaXmlRegular");
+            var datastore2 = new JmaDatastore(AppIni.ProjectId, "JmaXmlRegular");
             await datastore2.DeleteFeedsAsync("JmaXmlRegular");
         }
 
@@ -118,6 +119,7 @@ namespace JmaXmlClient
 
                 var options = new DbContextOptionsBuilder<ForecastContext>()
                     .UseNpgsql(Configuration.GetConnectionString("ForecastConnection"));
+                
                 using (var context2 = new ForecastContext(options.Options))
                 {
 
@@ -138,11 +140,11 @@ namespace JmaXmlClient
             if (AppIni.IsOutputToDatastore)
             {
                 //入力側
-                var datastore = new Datastore("JmaVpfg50");
+                var datastore = new JmaDatastore(AppIni.ProjectId, "JmaVpfg50");
                 var results = await datastore.GetAllJmaXmlAsync("JmaVpfg50");
 
                 //保存側
-                Datastore datasore2 = new Datastore("JsonVpfg50");
+                var datasore2 = new JmaDatastore(AppIni.ProjectId, "JsonVpfg50");
                 var entityList = new List<Google.Cloud.Datastore.V1.Entity>();
 
                 foreach (var entity in results.Entities)
@@ -170,6 +172,7 @@ namespace JmaXmlClient
 
                 var options = new DbContextOptionsBuilder<ForecastContext> ()
                     .UseNpgsql(Configuration.GetConnectionString("ForecastConnection"));
+                
                 using (var context2 = new ForecastContext(options.Options))
                 {
                     foreach (var data in _forecastContext.JmaVpfw50)
@@ -189,11 +192,11 @@ namespace JmaXmlClient
             if (AppIni.IsOutputToDatastore)
             {
                 //入力側
-                var datastore = new Datastore("JmaVpfw50");
+                var datastore = new JmaDatastore(AppIni.ProjectId, "JmaVpfw50");
                 var results = await datastore.GetAllJmaXmlAsync("JmaVpfw50");
 
                 //保存側
-                Datastore datasore2 = new Datastore("JsonVpfw50");
+                var datasore2 = new JmaDatastore(AppIni.ProjectId, "JsonVpfw50");
                 var entityList = new List<Google.Cloud.Datastore.V1.Entity>();
                 foreach (var entity in results.Entities)
                 {
@@ -237,6 +240,7 @@ namespace JmaXmlClient
 
             var options = new DbContextOptionsBuilder<ForecastContext>()
                 .UseNpgsql(Configuration.GetConnectionString("ForecastConnection"));
+          
             using (var context2 = new ForecastContext(options.Options))
             {
 
@@ -257,9 +261,9 @@ namespace JmaXmlClient
         static async Task ConditionXmlToJson(string kindXml, string kindJson)
         {
             //入力側
-            var datastore1 = new Datastore(kindXml);
+            var datastore1 = new JmaDatastore(AppIni.ProjectId, kindXml);
             //保存側
-            Datastore datastore2 = new Datastore(kindJson);
+            var datastore2 = new JmaDatastore(AppIni.ProjectId, kindJson);
             var entityList = new List<Google.Cloud.Datastore.V1.Entity>();
 
             var results = await datastore1.GetAllJmaXmlAsync(kindXml);

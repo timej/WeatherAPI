@@ -5,16 +5,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using JmaXmlClient.Models;
-using JmaXmlClient.Data;
-using System.Data.SqlClient;
 using Npgsql;
 using Microsoft.EntityFrameworkCore;
-using System.Threading;
+using JmaXml.Common.Data;
+using JmaXml.Common;
 
 namespace JmaXmlClient.Models
 {
-    public class JmaXmlRegular
+    public class JmaXmlRegularTask
     {
         public static async Task RegularAsync(ForecastContext forecastContext)
         {
@@ -26,7 +24,7 @@ namespace JmaXmlClient.Models
             var vpzw50List = new List<JmaXmlData>();
             try
             {
-                Datastore datastore = new Datastore("JmaXmlInfo");
+                var datastore = new JmaDatastore(AppIni.ProjectId, "JmaXmlInfo");
                 DateTime? update;
                 if (AppIni.IsOutputToPostgreSQL)
                 {
@@ -147,8 +145,8 @@ namespace JmaXmlClient.Models
             if (!forecastList.Any())
                 return;
 
-            Datastore datastore1 = new Datastore(kindXml);
-            Datastore datastore2 = new Datastore(kindJson);
+            var datastore1 = new JmaDatastore(AppIni.ProjectId, kindXml);
+            var datastore2 = new JmaDatastore(AppIni.ProjectId, kindJson);
             var entityList1 = new List<Entity>();
             var entityList2 = new List<Entity>();
 

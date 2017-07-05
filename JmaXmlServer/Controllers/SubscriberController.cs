@@ -12,12 +12,21 @@ using Serilog;
 using JmaXmlServer.Models;
 using Newtonsoft.Json;
 using System.Diagnostics;
+using JmaXml.Common;
+using JmaXml.Common.Data;
+using Npgsql;
+using Microsoft.EntityFrameworkCore;
 
 namespace JmaXmlServer.Controllers
 {
     public class SubscriberController : Controller
     {
+        private readonly ForecastContext _context;
         private readonly XNamespace Xmlns = "http://www.w3.org/2005/Atom";
+        public SubscriberController(ForecastContext context)
+        {
+            _context = context;
+        }
 
         [HttpGet]
         public IActionResult Index()
@@ -113,8 +122,28 @@ namespace JmaXmlServer.Controllers
 
                 if (jmaXmlFeedList.Any())
                 {
-                    Datastore datastore = new Datastore("JmaXml" + char.ToUpper(feedtype[0]) + feedtype.Substring(1));
-                    datastore.AddTask(JsonConvert.SerializeObject(jmaXmlFeedList));
+                    DateTime dt = DateTime.UtcNow;
+                    string xml = JsonConvert.SerializeObject(jmaXmlFeedList);
+                    if (AppConst.IsOutputToPostgreSQL)
+                    {
+                        try
+                        {
+                            string sql = $"INSERT INTO jma_xml_{feedtype} (created, feeds) VALUES(@created, @feeds);";
+                            NpgsqlParameter created = new NpgsqlParameter("created", dt);
+                            NpgsqlParameter feeds = new NpgsqlParameter("feeds", xml);
+
+                            int num = _context.Database.ExecuteSqlCommand(sql, created, feeds);
+                        }
+                        catch(Exception e1)
+                        {
+                            LoggerClass.LogError("PostgreSQL Error: " + e1.Message);
+                        }
+                    }
+                    if (AppConst.IsOutputToDatastore)
+                    {
+                        var datastore = new JmaDatastore(AppConst.ProjectId, "JmaXml" + char.ToUpper(feedtype[0]) + feedtype.Substring(1));
+                        await datastore.AddTask(xml, dt);
+                    }
 
                     //プロセスが<defunct>というゾンビになって残るため EnableRaisingEvents = true が必要
                     //https://stackoverflow.com/questions/43515360/net-core-process-start-leaving-defunct-child-process-behind
@@ -136,18 +165,25 @@ namespace JmaXmlServer.Controllers
             return Content("");
         }
 
-        public IActionResult Test()
+        public async Task<IActionResult> Test()
         {
-            Datastore datastore = new Datastore("JmaXmlTest");
-            datastore.AddTask("Datastoreのテスト");
+            var datastore = new JmaDatastore(AppConst.ProjectId, "JmaXmlTest");
+            await datastore.AddTask("Datastoreのテスト", DateTime.UtcNow);
 
             return Content("OK");
         }
 
         public IActionResult Test2()
         {
-            var startInfo = new ProcessStartInfo("dotnet", AppConst.ClientPath + " -r");
-            var process = Process.Start(startInfo);
+            /*
+            string sql = $"INSERT INTO jma_xml_regular (created, feeds) VALUES(@created, @feeds);";
+            NpgsqlParameter created = new NpgsqlParameter("created", DateTime.UtcNow);
+            NpgsqlParameter feeds = new NpgsqlParameter("feeds", "abc");
+
+            int num = _context.Database.ExecuteSqlCommand(sql, created, feeds);
+            */
+            //var startInfo = new ProcessStartInfo("dotnet", AppConst.ClientPath + " -r");
+            //var process = Process.Start(startInfo);
 
             return Content("OK");
         }

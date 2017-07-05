@@ -10,6 +10,8 @@ using Microsoft.Extensions.Logging;
 using Serilog;
 using System.IO;
 using JmaXmlServer.Models;
+using JmaXml.Common.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace JmaXmlServer
 {
@@ -39,12 +41,14 @@ namespace JmaXmlServer
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddDbContext<ForecastContext>(options => options.UseNpgsql(Configuration.GetConnectionString("ForecastConnection")));
+
             // Add framework services.
             services.AddMvc();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory, ForecastContext forecastContext)
         {
             loggerFactory.AddConsole(Configuration.GetSection("Logging"));
             loggerFactory.AddDebug();
@@ -70,6 +74,11 @@ namespace JmaXmlServer
             });
 
             AppConst.Ini(Configuration);
+
+            //PostgreSQLデータベースの自動作成
+            if (AppConst.IsOutputToPostgreSQL)
+                forecastContext.Database.Migrate();
+
         }
     }
 }

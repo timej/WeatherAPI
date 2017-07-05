@@ -4,19 +4,34 @@ using System.Linq;
 using System.Threading.Tasks;
 using Google.Cloud.Datastore.V1;
 
-namespace JmaXmlClient.Models
+namespace JmaXml.Common
 {
-    public class Datastore
+    public class JmaDatastore
     {
         private readonly DatastoreDb _db;
         private readonly KeyFactory _keyFactory;
 
-        public Datastore(string kind)
+        public JmaDatastore(string projectId, string kind)
         {
             // Create an authorized Datastore service using Application Default Credentials.
-            _db = DatastoreDb.Create(AppIni.ProjectId);
+            _db = DatastoreDb.Create(projectId);
             // Create a Key factory to construct keys associated with this project.
             _keyFactory = _db.CreateKeyFactory(kind);
+        }
+
+        public async Task AddTask(string feeds, DateTime created)
+        {
+            Entity task = new Entity()
+            {
+                Key = _keyFactory.CreateIncompleteKey(),
+                ["feeds"] = new Value()
+                {
+                    StringValue = feeds,
+                    ExcludeFromIndexes = true
+                },
+                ["created"] = created,
+            };
+            await _db.InsertAsync(task);
         }
 
         //

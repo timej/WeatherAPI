@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Metadata;
 
-namespace JmaXmlClient.Migrations
+namespace JmaXml.Common.Migrations
 {
     public partial class ver1 : Migration
     {
@@ -108,6 +108,20 @@ namespace JmaXmlClient.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "jma_xml_extra",
+                columns: table => new
+                {
+                    id = table.Column<int>(type: "serial", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.SerialColumn),
+                    created = table.Column<DateTime>(type: "timestamptz", nullable: false),
+                    feeds = table.Column<string>(nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_jma_xml_extra", x => x.id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "jma_xml_info",
                 columns: table => new
                 {
@@ -118,6 +132,20 @@ namespace JmaXmlClient.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_jma_xml_info", x => x.id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "jma_xml_regular",
+                columns: table => new
+                {
+                    id = table.Column<int>(type: "serial", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.SerialColumn),
+                    created = table.Column<DateTime>(type: "timestamptz", nullable: false),
+                    feeds = table.Column<string>(nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_jma_xml_regular", x => x.id);
                 });
 
             migrationBuilder.CreateTable(
@@ -243,7 +271,13 @@ namespace JmaXmlClient.Migrations
                 name: "jma_vpzw50");
 
             migrationBuilder.DropTable(
+                name: "jma_xml_extra");
+
+            migrationBuilder.DropTable(
                 name: "jma_xml_info");
+
+            migrationBuilder.DropTable(
+                name: "jma_xml_regular");
 
             migrationBuilder.DropTable(
                 name: "json_vpcw50");

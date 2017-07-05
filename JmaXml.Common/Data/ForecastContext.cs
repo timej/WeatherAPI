@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text;
 
-namespace JmaXmlClient.Data
+namespace JmaXml.Common.Data
 {
     public class ForecastContext : DbContext
     {
@@ -25,12 +25,13 @@ namespace JmaXmlClient.Data
         public DbSet<JsonVpww54> JsonVpww54 { get; set; }
 
         public DbSet<JmaXmlInfo> JmaXmlInfo { get; set; }
+        public DbSet<JmaXmlRegular> JmaXmlRegular { get; set; }
+        public DbSet<JmaXmlExtra> JmaXmlExtra { get; set; }
 
-       
         /*
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            optionsBuilder.UseNpgsql("Server=localhost;Database=forecast;User ID=weather;Password=g5$dfTg38i9;");
+            optionsBuilder.UseNpgsql("Server=localhost;Database=forecast;User ID=xxxxx;Password=xxxxxx;");
         }
         */
         
@@ -72,6 +73,10 @@ namespace JmaXmlClient.Data
 
             modelBuilder.Entity<JmaXmlInfo>()
                 .ToTable("jma_xml_info");
+            modelBuilder.Entity<JmaXmlRegular>()
+                .ToTable("jma_xml_regular");
+            modelBuilder.Entity<JmaXmlExtra>()
+                .ToTable("jma_xml_extra");
         }
     }
 

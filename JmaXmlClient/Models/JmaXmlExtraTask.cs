@@ -1,5 +1,4 @@
 ﻿using Google.Cloud.Datastore.V1;
-using JmaXmlClient.Data;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using Npgsql;
@@ -9,10 +8,12 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using JmaXml.Common.Data;
+using JmaXml.Common;
 
 namespace JmaXmlClient.Models
 {
-    public class JmaXmlExtra
+    public class JmaXmlExtraTask
     {
         public static async Task ExtraAsync(ForecastContext forecastContext)
         {
@@ -22,7 +23,7 @@ namespace JmaXmlClient.Models
 
             try
             {
-                var datastore1 = new Datastore("JmaXmlInfo");
+                var datastore1 = new JmaDatastore(AppIni.ProjectId, "JmaXmlInfo");
                 DateTime? update;
 
                 if (AppIni.IsOutputToPostgreSQL)
@@ -39,7 +40,7 @@ namespace JmaXmlClient.Models
                 if (update == null || update < DateTime.UtcNow.AddHours(-24))
                     update = DateTime.UtcNow.AddHours(-24);
 
-                var datastore = new Datastore("JmaXmlExtra");
+                var datastore = new JmaDatastore(AppIni.ProjectId, "JmaXmlExtra");
                 var list = await datastore.GetJmaFeed("JmaXmlExtra", (DateTime)update);
                 if (!list.Any())
                     return;
@@ -112,7 +113,7 @@ namespace JmaXmlClient.Models
             if (!forecastList.Any())
                 return;
 
-            Datastore datastore = new Datastore(kindXml);
+            var datastore = new JmaDatastore(AppIni.ProjectId, kindXml);
             var entityList = new List<Entity>();
 
             foreach (var forecast in forecastList)
