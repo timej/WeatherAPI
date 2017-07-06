@@ -143,6 +143,12 @@ namespace JmaXmlServer.Controllers
                     {
                         var datastore = new JmaDatastore(AppConst.ProjectId, "JmaXml" + char.ToUpper(feedtype[0]) + feedtype.Substring(1));
                         await datastore.AddTask(xml, dt);
+
+                        var datastore2 = new JmaDatastore2(AppConst.ProjectId);
+                        await datastore2.FeedsInsert(feedtype, xml, dt);
+
+                        //エラー処理
+                        //return new StatusCodeResult(429);
                     }
 
                     //プロセスが<defunct>というゾンビになって残るため EnableRaisingEvents = true が必要
