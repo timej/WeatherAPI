@@ -54,9 +54,11 @@ namespace JmaXmlClient.Models
                         switch (feed.Task)
                         {
                             case "vpfg50": //府県天気予報
+                            case "fd50":
                                 Utils.AddFeed(vpfg50List, feed);
                                 break;
                             case "vpfd50": //府県天気概況
+                            case "fg50":
                                 Utils.AddFeed(vpfd50List, feed);
                                 break;
                             case "vpfw50": //府県週間天気予報
