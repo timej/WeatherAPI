@@ -17,13 +17,15 @@ namespace JmaXml.Common
             _db = DatastoreDb.Create(projectId);
         }
 
+        //公開されるXML電文の更新情報のデータ
         //feedType: regular (定期) extra (臨時)
         public async Task FeedsInsert(string feedType, string feeds, DateTime created)
         {
-            Key forcastListKey = _db.CreateKeyFactory("JmaForcastList").CreateKey(feedType);
+            Key forcastListKey = _db.CreateKeyFactory("JmaList").CreateKey(feedType);
             Key feedKey = new KeyFactory(forcastListKey, "Feeds").CreateIncompleteKey();
             Entity entity = new Entity()
             {
+                Key = feedKey,
                 ["feeds"] = new Value()
                 {
                     StringValue = feeds,

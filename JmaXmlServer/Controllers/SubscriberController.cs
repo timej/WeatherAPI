@@ -31,7 +31,7 @@ namespace JmaXmlServer.Controllers
         [HttpGet]
         public IActionResult Index()
         {
-            //HUBから、登録確認のため初回および５日間隔で、アメリカ太平洋時間の5:00（日本時間だと20:00か21:00）にチャレンジコード付きリクエストが飛んでくる。
+            //HUBから、登録確認のため初回および５日間隔で、アメリカ太平洋時間の4:00（日本時間だと夏20:00か冬21:00）にチャレンジコード付きリクエストが飛んでくる。
             //チャレンジコードをそのまま返す。
             //テスト用 http://(yourdomain)/subscriber?hub.challenge=challenge_code&hub.topic=http://xml.kishou.go.jp/feed/regular.xml&hub.mode=subscribe&hub.lease_seconds=432000
 
@@ -141,14 +141,19 @@ namespace JmaXmlServer.Controllers
                     }
                     if (AppConst.IsOutputToDatastore)
                     {
-                        var datastore = new JmaDatastore(AppConst.ProjectId, "JmaXml" + char.ToUpper(feedtype[0]) + feedtype.Substring(1));
-                        await datastore.AddTask(xml, dt);
+                        try
+                        {
+                            var datastore = new JmaDatastore(AppConst.ProjectId, "JmaXml" + char.ToUpper(feedtype[0]) + feedtype.Substring(1));
+                            await datastore.AddTask(xml, dt);
 
-                        var datastore2 = new JmaDatastore2(AppConst.ProjectId);
-                        await datastore2.FeedsInsert(feedtype, xml, dt);
-
-                        //エラー処理
-                        //return new StatusCodeResult(429);
+                            var datastore2 = new JmaDatastore2(AppConst.ProjectId);
+                            await datastore2.FeedsInsert(feedtype, xml, dt);
+                        }
+                        catch(Exception e1)
+                        {
+                            LoggerClass.LogError("PostgreSQL Error: " + e1.Message);
+                            return new StatusCodeResult(429);
+                        }
                     }
 
                     //プロセスが<defunct>というゾンビになって残るため EnableRaisingEvents = true が必要
@@ -173,8 +178,8 @@ namespace JmaXmlServer.Controllers
 
         public async Task<IActionResult> Test()
         {
-            var datastore = new JmaDatastore(AppConst.ProjectId, "JmaXmlTest");
-            await datastore.AddTask("Datastoreのテスト", DateTime.UtcNow);
+            var datastore = new JmaDatastore2(AppConst.ProjectId);
+            await datastore.FeedsInsert("test", "Datastoreのテスト", DateTime.UtcNow);
 
             return Content("OK");
         }
