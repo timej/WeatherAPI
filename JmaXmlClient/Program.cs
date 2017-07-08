@@ -14,6 +14,7 @@ using Microsoft.EntityFrameworkCore;
 using JmaXml.Common.Data;
 using Npgsql;
 using JmaXml.Common;
+using Google.Cloud.Datastore.V1;
 
 namespace JmaXmlClient
 {
@@ -66,7 +67,7 @@ namespace JmaXmlClient
             if(args.Contains("-r"))
                 JmaXmlRegularTask.RegularAsync(_forecastContext).GetAwaiter().GetResult();
             //警報・注意報等
-            else if(args.Contains("-e"))
+            else if (args.Contains("-e"))
                 JmaXmlExtraTask.ExtraAsync(_forecastContext).GetAwaiter().GetResult();
             //XMLデータから天気予報のJsonデータの一括作成
             else if (args.Contains("-a"))
@@ -89,11 +90,14 @@ namespace JmaXmlClient
 #if !DEBUG
             await Utils.WriteLog("開始");
 #endif
-            int office = 360;
-            var datastore = new JmaDatastore(AppIni.ProjectId, "JmaVpfg50");
-            string xml = await datastore.GetJmaXmlAsync(office);
-            var forecast = new JmaForecast(xml, office);
-            
+ 
+
+
+            //int office = 360;
+            //var datastore = new JmaDatastore(AppIni.ProjectId, "JmaVpfg50");
+            //string xml = await datastore.GetJmaXmlAsync(office);
+            //var forecast = new JmaForecast(xml, office);
+
 #if !DEBUG
             await Utils.WriteLog("終了");
 #endif

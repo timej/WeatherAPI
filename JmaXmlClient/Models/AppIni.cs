@@ -14,6 +14,8 @@ namespace JmaXmlClient.Models
         public static string ProjectId { get; private set; }
         public static bool IsOutputToPostgreSQL { get; private set; }
         public static bool IsOutputToDatastore { get; private set; }
+        public static bool IsOutputToPostgreSQL2 { get; private set; } = false;
+        public static bool IsOutputToDatastore2 { get; private set; } = true;
         public static void Init(string basePath, IConfigurationRoot configuration)
         {
             DataPath = Path.Combine(basePath, "App_Data");

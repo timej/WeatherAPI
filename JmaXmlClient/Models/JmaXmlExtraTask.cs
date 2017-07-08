@@ -18,8 +18,8 @@ namespace JmaXmlClient.Models
         public static async Task ExtraAsync(ForecastContext forecastContext)
         {
             await Utils.WriteLog("注意報開始");
-            var vpww53List = new List<JmaXmlData>(); 
-            var vpww54List = new List<JmaXmlData>(); 
+            var vpww53List = new List<JmaFeedData>(); 
+            var vpww54List = new List<JmaFeedData>(); 
 
             try
             {
@@ -85,7 +85,7 @@ namespace JmaXmlClient.Models
             }
         }
 
-        private static async Task PostgreUpsertData(List<JmaXmlData> forecastList, ForecastContext forecastContext, string xmlTable)
+        private static async Task PostgreUpsertData(List<JmaFeedData> forecastList, ForecastContext forecastContext, string xmlTable)
         {
             if (!forecastList.Any())
                 return;
@@ -108,7 +108,7 @@ namespace JmaXmlClient.Models
             }
         }
 
-        private static async Task UpsertData(List<JmaXmlData> forecastList, string kindXml)
+        private static async Task UpsertData(List<JmaFeedData> forecastList, string kindXml)
         {
             if (!forecastList.Any())
                 return;

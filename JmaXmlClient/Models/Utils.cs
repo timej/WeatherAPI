@@ -25,14 +25,36 @@ namespace JmaXmlClient.Models
             }
         }
 
-        internal static void AddFeed(List<JmaXmlData> forecastList, JmaXmlFeed feed)
+        internal static void AddFeed(List<JmaFeedData> forecastList, JmaXmlFeed feed)
         {
             int id = AppIni.PublishingOffice[feed.Author];
             var forecast = forecastList.FirstOrDefault(x => x.Id == id);
             if (forecast == null)
-                forecastList.Add(new JmaXmlData
+                forecastList.Add(new JmaFeedData
                 {
                     Id = id,
+                    UpdateTime = feed.UpdateTime,
+                    Link = feed.Link
+                });
+            else
+            {
+                if (forecast.UpdateTime < feed.UpdateTime)
+                {
+                    forecast.UpdateTime = feed.UpdateTime;
+                    forecast.Link = feed.Link;
+                }
+            }
+        }
+
+        internal static void AddFeed(List<JmaFeedData2> forecastList, JmaXmlFeed feed)
+        {
+            int id = AppIni.PublishingOffice[feed.Author];
+            var forecast = forecastList.FirstOrDefault(x => x.Id == id && x.Task == feed.Task);
+            if (forecast == null)
+                forecastList.Add(new JmaFeedData2
+                {
+                    Id = id,
+                    Task = feed.Task,
                     UpdateTime = feed.UpdateTime,
                     Link = feed.Link
                 });
@@ -53,7 +75,7 @@ namespace JmaXmlClient.Models
             if (now.Hour < 2)
             {
                 now = now.AddDays(-1);
-                if (code == "vpfg50")
+                if (code == "vpfd50")
                     return new DateTime(now.Year, now.Month, now.Day, 20, 0, 0, DateTimeKind.Utc);
                 else
                     return new DateTime(now.Year, now.Month, now.Day, 8, 0, 0, DateTimeKind.Utc);
@@ -66,7 +88,7 @@ namespace JmaXmlClient.Models
                 return new DateTime(now.Year, now.Month, now.Day, 8, 0, 0, DateTimeKind.Utc);
             else
             {
-                if (code == "vpfg50")
+                if (code == "vpfd50")
                     return new DateTime(now.Year, now.Month, now.Day, 20, 0, 0, DateTimeKind.Utc);
                 else
                     return new DateTime(now.Year, now.Month, now.Day, 8, 0, 0, DateTimeKind.Utc);

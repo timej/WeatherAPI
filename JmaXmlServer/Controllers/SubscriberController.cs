@@ -87,10 +87,10 @@ namespace JmaXmlServer.Controllers
                         switch (title)
                         {
                             case "府県天気予報": //VPFD50
-                                task = "fd50";
+                                task = "vpfd50";
                                 break;
                             case "府県天気概況": //VPFG50
-                                task = "fg50";
+                                task = "vpfg50";
                                 break;
                             case "府県週間天気予報": //VPFW50
                                 task = "vpfw50";
