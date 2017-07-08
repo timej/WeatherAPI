@@ -1,8 +1,7 @@
 {
   "profiles": {
     "JmaXmlClient": {
-      "commandName": "Project",
-      "commandLineArgs": "-r"
+      "commandName": "Project"
     }
   }
 }

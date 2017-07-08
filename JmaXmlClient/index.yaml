@@ -1,6 +1,0 @@
-﻿indexes:
-- kind: JmaFeeds
-  ancestor: yes
-  properties:
-  - name: created
-    direction: desc

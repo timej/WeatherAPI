@@ -1,0 +1,12 @@
+﻿indexes:
+
+- kind: JmaFeeds
+  ancestor: yes
+  properties:
+  - name: created
+    direction: desc
+
+- kind: JmaXml
+  ancestor: yes
+  properties:
+  - name: update

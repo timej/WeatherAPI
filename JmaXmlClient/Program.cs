@@ -52,9 +52,12 @@ namespace JmaXmlClient
             ConfigureServices(services);
             var serviceProvider = services.BuildServiceProvider();
 
-            _forecastContext = serviceProvider.GetService<ForecastContext>();
-            //データベースの自動作成
-            _forecastContext.Database.Migrate();
+            if (bool.Parse(Configuration["Output:PostgreSQL"]))
+            {
+                _forecastContext = serviceProvider.GetService<ForecastContext>();
+                //データベースの自動作成
+                _forecastContext.Database.Migrate();
+            }
 
 
             AppIni.Init(_env.ApplicationBasePath, Configuration);
@@ -65,7 +68,7 @@ namespace JmaXmlClient
 #endif
             //天気予報等
             if(args.Contains("-r"))
-                JmaXmlRegularTask.RegularAsync(_forecastContext).GetAwaiter().GetResult();
+                JmaXmlRegularTask2.RegularAsync(_forecastContext).GetAwaiter().GetResult();
             //警報・注意報等
             else if (args.Contains("-e"))
                 JmaXmlExtraTask.ExtraAsync(_forecastContext).GetAwaiter().GetResult();
@@ -90,8 +93,13 @@ namespace JmaXmlClient
 #if !DEBUG
             await Utils.WriteLog("開始");
 #endif
- 
-
+            var datastore = new JmaDatastore2(AppIni.ProjectId);
+            var data = await datastore.GetJmaUpdate("vpfd50");
+            foreach(var d in data.Entities)
+            {
+                var a = d.Key;
+                var b = d.Properties;
+            }
 
             //int office = 360;
             //var datastore = new JmaDatastore(AppIni.ProjectId, "JmaVpfg50");

@@ -62,7 +62,7 @@ namespace JmaXml.Common
             Query query = new Query("JmaFeeds")
             {
                 Filter = Filter.And(Filter.HasAncestor(_db.CreateKeyFactory("FeedType")
-                    .CreateKey("feedType")),
+                    .CreateKey(feedType)),
                     Filter.GreaterThan("created", cutoff)),
                 Order = { { "created", PropertyOrder.Types.Direction.Descending } }
             };
@@ -72,24 +72,11 @@ namespace JmaXml.Common
             return result.Entities;
         }
 
-        public async Task<IEnumerable<Entity>> GetJmaUpdate(string parent, DateTime cutoff)
-        {
-            Query query = new Query("JmaXml")
-            {
-                Filter = Filter.HasAncestor(_db.CreateKeyFactory("JmaList").CreateKey(parent)),
-                Projection = { "__key__", "update" }
-            };
-
-            var result = await _db.RunQueryAsync(query);
-            return result.Entities;
-        }
-
         //天気予報等のXML用
-        public Entity SetEntity(string root, string second, string kind, int office, string forecast, DateTime updateTime)
+        public Entity SetEntity(string kind, string task, int office, string forecast, DateTime updateTime)
         {
-            Key rootKey = _db.CreateKeyFactory("JmaList").CreateKey(root);
-            Key secondKey = new KeyFactory(rootKey, "Category").CreateKey(second);
-            Key key = new KeyFactory(secondKey, kind).CreateKey(office);
+            Key rootKey = _db.CreateKeyFactory("Task").CreateKey(task);
+            Key key = new KeyFactory(rootKey, kind).CreateKey(office);
 
             return new Entity()
             {
@@ -102,6 +89,19 @@ namespace JmaXml.Common
                 ["update"] = updateTime,
             };
         }
+
+        //天気予報等のXML用
+        public async Task<DatastoreQueryResults> GetJmaUpdate(string task)
+        {
+            Query query = new Query("JmaXml")
+            {
+                Filter = Filter.HasAncestor(_db.CreateKeyFactory("Task").CreateKey(task)),
+                Projection = { "__key__", "update" }
+            };
+
+            return await _db.RunQueryAsync(query);
+        }
+
 
         public async Task UpsertForecastAsync(List<Entity> entityList)
         {

@@ -37,7 +37,7 @@ namespace JmaXmlClient.Models
                 if (update == null || update < dt)
                     update = dt;
 
-                var list = await datastore2.GetJmaFeed("extra", (DateTime)update);
+                var list = await datastore2.GetJmaFeed("regular", (DateTime)update);
                 if (!list.Any())
                     return;
                 DateTime lastUpdate = list.First().Properties["created"].TimestampValue.ToDateTime();
@@ -48,20 +48,9 @@ namespace JmaXmlClient.Models
                     var feeds = JsonConvert.DeserializeObject<List<JmaXmlFeed>>(s);
                     foreach (var feed in feeds)
                     {
-                        if (feed.Task == "vpfg50" || feed.Task == "fd50")
-                            feed.Task = "vpfd50";
-                        else if ((feed.Task == "vpfd50" || feed.Task == "fg50"))
-                            feed.Task = "vpfg50";
-
                         Utils.AddFeed(feedList, feed);
                     }
                 }
-
-                //電文を受け取れなかった場合、PubSubHubbubは再送をしてくれる。
-                //その場合受けとる順番はランダムになるため、新しい電文を古い電文で置き換えないかチェック
-                /*
-                    
-                 */
 
 
                 /*
@@ -76,12 +65,18 @@ namespace JmaXmlClient.Models
                 }
                 */
 
-                if (AppIni.IsOutputToDatastore)
+                if (AppIni.IsOutputToDatastore2)
                 {
+
+                    //電文を受け取れなかった場合、PubSubHubbubは再送をしてくれる。
+                    //その場合受けとる順番はランダムになるため、新しい電文を古い電文で置き換えないかチェック
+                   
+
+
+               
+
                     //府県天気予報
                     await UpsertData(feedList);
-
-                    //
                     await datastore2.SetUpdateAsync("JmaXmlInfo", "JmaRegularFeeds2", lastUpdate);
                 }
 
@@ -129,12 +124,9 @@ namespace JmaXmlClient.Models
             forecastContext.Database.ExecuteSqlCommand(sql, id, update);
         }
 
-        //府県天気予報の処理
+        //天気予報等の処理-Datastoreを使用
         static async Task UpsertData(List<JmaFeedData2> forecastList)
         {
-            if (!forecastList.Any())
-                return;
-
             var datastore1 = new JmaDatastore2(AppIni.ProjectId);
             var datastore2 = new JmaDatastore2(AppIni.ProjectId);
             var entityList1 = new List<Entity>();
@@ -143,7 +135,7 @@ namespace JmaXmlClient.Models
             foreach (var forecast in forecastList)
             {
                 string xml = await JmaHttpClient.GetJmaXml(forecast.Link);
-                entityList1.Add(datastore1.SetEntity("JmaXml", "forecast", forecast.Task, forecast.Id, xml, forecast.UpdateTime.ToUniversalTime()));
+                entityList1.Add(datastore1.SetEntity("JmaXml", forecast.Task, forecast.Id, xml, forecast.UpdateTime.ToUniversalTime()));
                 string json;
                 if(forecast.Task == "vpfd50")
                     json = JsonVpfd50(xml, forecast.Id);
@@ -151,7 +143,7 @@ namespace JmaXmlClient.Models
                     json = JsonVpfw50(xml, forecast.Id);
                 else
                     json = JsonCondition(xml, forecast.Id);
-                entityList2.Add(datastore2.SetEntity("JmaJson", "forecast", forecast.Task, forecast.Id, json, forecast.UpdateTime.ToUniversalTime()));
+                entityList2.Add(datastore2.SetEntity("JmaJson", forecast.Task, forecast.Id, json, forecast.UpdateTime.ToUniversalTime()));
             }
 
             await datastore1.UpsertForecastAsync(entityList1);
