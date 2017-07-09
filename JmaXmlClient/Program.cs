@@ -76,7 +76,7 @@ namespace JmaXmlClient
             else if (args.Contains("-e"))
             {
                 JmaXmlExtraTask.ExtraAsync(_forecastContext).GetAwaiter().GetResult();
-                //JmaXmlExtraTask2.ExtraAsync(_forecastContext).GetAwaiter().GetResult();
+                JmaXmlExtraTask2.ExtraAsync(_forecastContext).GetAwaiter().GetResult();
             }
             //XMLデータから天気予報のJsonデータの一括作成
             else if (args.Contains("-a"))
