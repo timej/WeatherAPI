@@ -13,38 +13,38 @@ using JmaXml.Common;
 
 namespace JmaXmlClient.Models
 {
-    public class JmaXmlExtraTask
+    public class JmaXmlExtraTask2
     {
+        enum JmaWarningTask { vpww53, vpww54 };
         public static async Task ExtraAsync(ForecastContext forecastContext)
         {
             await Utils.WriteLog("注意報開始");
-            var vpww53List = new List<JmaFeedData>(); 
-            var vpww54List = new List<JmaFeedData>(); 
-
+            var feedList = new List<JmaFeedData2>();
             try
             {
-                var datastore1 = new JmaDatastore(AppIni.ProjectId, "JmaXmlInfo");
+                var datastore2 = new JmaDatastore2(AppIni.ProjectId);
                 DateTime? update;
-
-                if (AppIni.IsOutputToPostgreSQL)
+                if (AppIni.IsOutputToPostgreSQL2)
                 {
-                    update = forecastContext.JmaXmlInfo.FirstOrDefault(x => x.Id == "JmaExtraFeeds")?.Update;
+                    update = forecastContext.JmaXmlInfo.FirstOrDefault(x => x.Id == "JmaExtraFeeds2")?.Update.ToUniversalTime();
                 }
-                else if (AppIni.IsOutputToDatastore)
+                else if (AppIni.IsOutputToDatastore2)
                 {
-                    update = await datastore1.GetUpdateAsync("JmaExtraFeeds");
+                    update = await datastore2.GetUpdateAsync("JmaXmlInfo", "JmaExtraFeeds2");
                 }
                 else
                     return;
 
-                if (update == null || update < DateTime.UtcNow.AddHours(-24))
-                    update = DateTime.UtcNow.AddHours(-24);
+                var dt = DateTime.UtcNow.AddDays(-1);
+                if (update == null || update < dt)
+                    update = dt;
 
-                var datastore = new JmaDatastore(AppIni.ProjectId, "JmaXmlExtra");
-                var list = await datastore.GetJmaFeed("JmaXmlExtra", (DateTime)update);
+                var list = await datastore2.GetJmaFeed("extra", (DateTime)update);
                 if (!list.Any())
                     return;
-                DateTime lastUpdate = list.First().Properties["created"].TimestampValue.ToDateTime();
+
+
+                DateTime lastUpdate = list.First().Properties["created"].TimestampValue.ToDateTime().ToUniversalTime();
 
                 foreach (var xmlRegular in list)
                 {
@@ -52,30 +52,45 @@ namespace JmaXmlClient.Models
                     var feeds = JsonConvert.DeserializeObject<List<JmaXmlFeed>>(json);
                     foreach (var feed in feeds)
                     {
-                        switch (feed.Task)
-                        {
-                            case "vpww53": //気象特別警報・警報・注意報
-                                Utils.AddFeed(vpww53List, feed);
-                                break;
-                            case "vpww54": //気象警報・注意報（Ｈ２７）
-                                Utils.AddFeed(vpww54List, feed);
-                                break;
-                        }
+                        Utils.AddFeed(feedList, feed);
                     }
                 }
 
-                if (AppIni.IsOutputToPostgreSQL)
+                if (AppIni.IsOutputToPostgreSQL2)
                 {
+                    /*
                     await PostgreUpsertData(vpww53List, forecastContext, "jma_vpww53");
                     await PostgreUpsertData(vpww54List, forecastContext, "jma_vpww54");
-                    PostgreSetUpdate(forecastContext, lastUpdate);
+                    */
                 }
 
-                    if (AppIni.IsOutputToDatastore)
+                if (AppIni.IsOutputToDatastore2)
                 {
-                    await UpsertData(vpww53List, "JmaVpww53");
-                    await UpsertData(vpww54List, "JmaVpww54");
-                    await datastore1.SetUpdateAsync("JmaExtraFeeds", lastUpdate);
+
+                    //電文を受け取れなかった場合、PubSubHubbubは再送をしてくれる。
+                    //その場合受けとる順番はランダムになるため、新しい電文を古い電文で置き換えないかチェック
+                    List<(int id, long update)?>[] updateList = new List<(int id, long update)?>[Enum.GetNames(typeof(JmaWarningTask)).Length];
+                    foreach (JmaWarningTask task in Enum.GetValues(typeof(JmaWarningTask)))
+                    {
+                        if (feedList.Any(x => x.Task == task.ToString()))
+                        {
+                            updateList[(int)task] = await datastore2.GetJmaUpdateAsync(task.ToString());
+                        }
+                    }
+
+                    var feedList1 = new List<JmaFeedData2>();
+                    foreach (var feed in feedList)
+                    {
+                        var previous = updateList[(int)Enum.Parse(typeof(JmaWarningTask), feed.Task)].FirstOrDefault(x => x?.id == feed.Id);
+                        long l = Utils.UnixTime(feed.UpdateTime);
+                        if (previous == null || previous?.update < l)
+                            feedList1.Add(feed);
+                    }
+
+
+                    await UpsertData(feedList1);
+            
+                    await datastore2.SetUpdateAsync("JmaXmlInfo", "JmaExtraFeeds2", lastUpdate);
                 }
 
                 await Utils.WriteLog("注意報終了");
@@ -109,28 +124,16 @@ namespace JmaXmlClient.Models
             }
         }
 
-        static void PostgreSetUpdate(ForecastContext forecastContext, DateTime lastUpdate)
+        private static async Task UpsertData(List<JmaFeedData2> forecastList)
         {
-            NpgsqlParameter id = new NpgsqlParameter("id", "JmaExtraFeeds");
-            NpgsqlParameter update = new NpgsqlParameter("update", lastUpdate);
-
-            string sql = $"INSERT INTO jma_xml_info(id, update) VALUES(@id, @update) " +
-                $"ON CONFLICT(id) DO UPDATE SET update = EXCLUDED.update;";
-            forecastContext.Database.ExecuteSqlCommand(sql, id, update);
-        }
-
-        private static async Task UpsertData(List<JmaFeedData> forecastList, string kindXml)
-        {
-            if (!forecastList.Any())
-                return;
-
-            var datastore = new JmaDatastore(AppIni.ProjectId, kindXml);
+     
+            var datastore = new JmaDatastore2(AppIni.ProjectId);
             var entityList = new List<Entity>();
 
             foreach (var forecast in forecastList)
             {
                 string xml = await JmaHttpClient.GetJmaXml(forecast.Link);
-                entityList.Add(datastore.SetEntity(forecast.Id, xml, forecast.UpdateTime.ToUniversalTime()));
+                entityList.Add(datastore.SetEntity("JmaXml", forecast.Task, forecast.Id, xml, forecast.UpdateTime.ToUniversalTime()));
             }
 
             await datastore.UpsertForecastAsync(entityList);

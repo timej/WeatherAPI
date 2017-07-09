@@ -54,17 +54,19 @@ namespace JmaXmlClient.Models
                 }
 
 
-                /*
-                if (AppIni.IsOutputToPostgreSQL)
+               
+                if (AppIni.IsOutputToPostgreSQL2)
                 {
+                    /*
                     await PostgreUpsertData(vpfg50List, forecastContext, "jma_vpfg50", "json_vpfg50", JsonVpfg50);
                     await PostgreUpsertData(vpfw50List, forecastContext, "jma_vpfw50", "json_vpfw50", JsonVpfw50);
                     await PostgreUpsertData(vpfd50List, forecastContext, "jma_vpfd50", "json_vpfd50", JsonCondition);
                     await PostgreUpsertData(vpcw50List, forecastContext, "jma_vpcw50", "json_vpcw50", JsonCondition);
                     await PostgreUpsertData(vpzw50List, forecastContext, "jma_vpzw50", "json_vpzw50", JsonCondition);
                     PostgreSetUpdate(forecastContext, lastUpdate);
+                    */
                 }
-                */
+               
 
                 if (AppIni.IsOutputToDatastore2)
                 {

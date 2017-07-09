@@ -23,7 +23,7 @@ namespace JmaXml.Common
             Entity entity = await _db.LookupAsync(key);
             if (entity == null)
                 return null;
-            return entity.Properties["update"].TimestampValue.ToDateTime();
+            return entity.Properties["update"].TimestampValue.ToDateTime().ToUniversalTime();
         }
 
         public async Task SetUpdateAsync(string kind, string keyname, DateTime dt)

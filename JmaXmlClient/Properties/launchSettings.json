@@ -2,7 +2,7 @@
   "profiles": {
     "JmaXmlClient": {
       "commandName": "Project",
-      "commandLineArgs": "-r"
+      "commandLineArgs": "-e"
     }
   }
 }
