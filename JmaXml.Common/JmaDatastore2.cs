@@ -91,15 +91,23 @@ namespace JmaXml.Common
         }
 
         //天気予報等のXML用
-        public async Task<DatastoreQueryResults> GetJmaUpdate(string task)
+        public async Task<List<(int id, long update)?>> GetJmaUpdateAsync(string task)
         {
+
+            List<(int id, long update)?> updateList = new List<(int id, long update)?>();
             Query query = new Query("JmaXml")
             {
                 Filter = Filter.HasAncestor(_db.CreateKeyFactory("Task").CreateKey(task)),
                 Projection = { "__key__", "update" }
             };
 
-            return await _db.RunQueryAsync(query);
+            var result = await _db.RunQueryAsync(query);
+            foreach (var d in result.Entities)
+            {
+                updateList.Add(((int)d.Key.Path[1].Id, d.Properties["update"].IntegerValue));
+
+            }
+            return updateList;
         }
 
 

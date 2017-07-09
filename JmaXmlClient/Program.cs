@@ -67,8 +67,11 @@ namespace JmaXmlClient
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 #endif
             //天気予報等
-            if(args.Contains("-r"))
+            if (args.Contains("-r"))
+            {
+                JmaXmlRegularTask.RegularAsync(_forecastContext).GetAwaiter().GetResult();
                 JmaXmlRegularTask2.RegularAsync(_forecastContext).GetAwaiter().GetResult();
+            }
             //警報・注意報等
             else if (args.Contains("-e"))
                 JmaXmlExtraTask.ExtraAsync(_forecastContext).GetAwaiter().GetResult();
@@ -94,12 +97,7 @@ namespace JmaXmlClient
             await Utils.WriteLog("開始");
 #endif
             var datastore = new JmaDatastore2(AppIni.ProjectId);
-            var data = await datastore.GetJmaUpdate("vpfd50");
-            foreach(var d in data.Entities)
-            {
-                var a = d.Key;
-                var b = d.Properties;
-            }
+            var data = await datastore.GetJmaUpdateAsync("vpfd50");
 
             //int office = 360;
             //var datastore = new JmaDatastore(AppIni.ProjectId, "JmaVpfg50");

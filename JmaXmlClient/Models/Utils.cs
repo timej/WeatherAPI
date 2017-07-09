@@ -16,6 +16,8 @@ namespace JmaXmlClient.Models
         public static readonly XNamespace XmlnsJmxEx = "http://xml.kishou.go.jp/jmaxml1/body/meteorology1/";
         public static readonly XNamespace XmlnsJmxEb = "http://xml.kishou.go.jp/jmaxml1/elementBasis1/";
 
+        public static readonly long UnixTime0 = (new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).Ticks) / 10;
+
         public static async Task WriteLog(string message)
         {
             string path = Path.Combine(AppIni.DataPath, "logs", $"log-{DateTime.Today.ToString("yyyyMMdd")}.txt");
@@ -23,6 +25,11 @@ namespace JmaXmlClient.Models
             {
                 await sr.WriteLineAsync($"{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss:fff")} {message}");
             }
+        }
+
+        internal static long UnixTime(DateTime dt)
+        {
+            return dt.ToUniversalTime().Ticks / 10 - UnixTime0;
         }
 
         internal static void AddFeed(List<JmaFeedData> forecastList, JmaXmlFeed feed)

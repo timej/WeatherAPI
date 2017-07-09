@@ -12,6 +12,7 @@ using JmaXml.Common;
 
 namespace JmaXmlClient.Models
 {
+    enum JmaForecastTask { vpfd50, vpfg50, vpfw50, vpcw50, vpzw50};
     public class JmaXmlRegularTask2
     {
         public static async Task RegularAsync(ForecastContext forecastContext)
@@ -70,13 +71,24 @@ namespace JmaXmlClient.Models
 
                     //電文を受け取れなかった場合、PubSubHubbubは再送をしてくれる。
                     //その場合受けとる順番はランダムになるため、新しい電文を古い電文で置き換えないかチェック
-                   
+                    List<(int id, long update)?>[] updateList = new List<(int id, long update)?>[Enum.GetNames(typeof(JmaForecastTask)).Length];
+                    foreach (JmaForecastTask task in Enum.GetValues(typeof(JmaForecastTask)))
+                    {
+                        if(feedList.Any(x => x.Task == task.ToString()))
+                        {
+                            updateList[(int)task] = await datastore2.GetJmaUpdateAsync(task.ToString());
+                        }
+                    }
 
-
-               
-
-                    //府県天気予報
-                    await UpsertData(feedList);
+                    var feedList1 = new List<JmaFeedData2>();
+                    foreach(var feed in feedList)
+                    {
+                        var previous = updateList[(int)Enum.Parse(typeof(JmaForecastTask), feed.Task)].FirstOrDefault(x => x?.id == feed.Id);
+                        long l = Utils.UnixTime(feed.UpdateTime);
+                        if (previous == null || previous?.update < l)
+                            feedList1.Add(feed);
+                    }
+                    await UpsertData(feedList1);
                     await datastore2.SetUpdateAsync("JmaXmlInfo", "JmaRegularFeeds2", lastUpdate);
                 }
 
