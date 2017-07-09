@@ -23,28 +23,28 @@ namespace JmaXmlClient.Models
             try
             {
                 var datastore2 = new JmaDatastore2(AppIni.ProjectId);
-                DateTime? update;
+                DateTime? updateUtc;
                 if (AppIni.IsOutputToPostgreSQL2)
                 {
-                    update = forecastContext.JmaXmlInfo.FirstOrDefault(x => x.Id == "JmaExtraFeeds2")?.Update.ToUniversalTime();
+                    updateUtc = forecastContext.JmaXmlInfo.FirstOrDefault(x => x.Id == "JmaExtraFeeds2")?.Update.ToUniversalTime();
                 }
                 else if (AppIni.IsOutputToDatastore2)
                 {
-                    update = await datastore2.GetUpdateAsync("JmaXmlInfo", "JmaExtraFeeds2");
+                    updateUtc = (await datastore2.GetUpdateAsync("JmaXmlInfo", "JmaExtraFeeds2"))?.ToUniversalTime();
                 }
                 else
                     return;
 
                 var dt = DateTime.UtcNow.AddDays(-1);
-                if (update == null || update < dt)
-                    update = dt;
+                if (updateUtc == null || updateUtc < dt)
+                    updateUtc = dt;
 
-                var list = await datastore2.GetJmaFeed("extra", (DateTime)update);
+                var list = await datastore2.GetJmaFeed("extra", (DateTime)updateUtc);
                 if (!list.Any())
                     return;
 
 
-                DateTime lastUpdate = list.First().Properties["created"].TimestampValue.ToDateTime().ToUniversalTime();
+                DateTime lastUpdateUtc = list.First().Properties["created"].TimestampValue.ToDateTime().ToUniversalTime();
 
                 foreach (var xmlRegular in list)
                 {
@@ -90,7 +90,7 @@ namespace JmaXmlClient.Models
 
                     await UpsertData(feedList1);
             
-                    await datastore2.SetUpdateAsync("JmaXmlInfo", "JmaExtraFeeds2", lastUpdate);
+                    await datastore2.SetUpdateAsync("JmaXmlInfo", "JmaExtraFeeds2", lastUpdateUtc);
                 }
 
                 await Utils.WriteLog("注意報終了");

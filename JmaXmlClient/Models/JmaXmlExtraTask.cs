@@ -24,27 +24,27 @@ namespace JmaXmlClient.Models
             try
             {
                 var datastore1 = new JmaDatastore(AppIni.ProjectId, "JmaXmlInfo");
-                DateTime? update;
+                DateTime? updateUtc;
 
                 if (AppIni.IsOutputToPostgreSQL)
                 {
-                    update = forecastContext.JmaXmlInfo.FirstOrDefault(x => x.Id == "JmaExtraFeeds")?.Update;
+                    updateUtc = forecastContext.JmaXmlInfo.FirstOrDefault(x => x.Id == "JmaExtraFeeds")?.Update.ToUniversalTime();
                 }
                 else if (AppIni.IsOutputToDatastore)
                 {
-                    update = await datastore1.GetUpdateAsync("JmaExtraFeeds");
+                    updateUtc = (await datastore1.GetUpdateAsync("JmaExtraFeeds"))?.ToUniversalTime();
                 }
                 else
                     return;
 
-                if (update == null || update < DateTime.UtcNow.AddHours(-24))
-                    update = DateTime.UtcNow.AddHours(-24);
+                if (updateUtc == null || updateUtc < DateTime.UtcNow.AddDays(-1))
+                    updateUtc = DateTime.UtcNow.AddDays(-1);
 
                 var datastore = new JmaDatastore(AppIni.ProjectId, "JmaXmlExtra");
-                var list = await datastore.GetJmaFeed("JmaXmlExtra", (DateTime)update);
+                var list = await datastore.GetJmaFeed("JmaXmlExtra", (DateTime)updateUtc);
                 if (!list.Any())
                     return;
-                DateTime lastUpdate = list.First().Properties["created"].TimestampValue.ToDateTime();
+                DateTime lastUpdateUtc = list.First().Properties["created"].TimestampValue.ToDateTime().ToUniversalTime();
 
                 foreach (var xmlRegular in list)
                 {
@@ -68,14 +68,14 @@ namespace JmaXmlClient.Models
                 {
                     await PostgreUpsertData(vpww53List, forecastContext, "jma_vpww53");
                     await PostgreUpsertData(vpww54List, forecastContext, "jma_vpww54");
-                    PostgreSetUpdate(forecastContext, lastUpdate);
+                    PostgreSetUpdate(forecastContext, lastUpdateUtc);
                 }
 
                     if (AppIni.IsOutputToDatastore)
                 {
                     await UpsertData(vpww53List, "JmaVpww53");
                     await UpsertData(vpww54List, "JmaVpww54");
-                    await datastore1.SetUpdateAsync("JmaExtraFeeds", lastUpdate);
+                    await datastore1.SetUpdateAsync("JmaExtraFeeds", lastUpdateUtc);
                 }
 
                 await Utils.WriteLog("注意報終了");
