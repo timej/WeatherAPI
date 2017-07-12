@@ -14,7 +14,6 @@ using Microsoft.EntityFrameworkCore;
 using JmaXml.Common.Data;
 using Npgsql;
 using JmaXml.Common;
-using Google.Cloud.Datastore.V1;
 
 namespace JmaXmlClient
 {
@@ -116,19 +115,20 @@ namespace JmaXmlClient
 
         static async Task DeleteData()
         {
+            int hour = 24; //24時間より前の更新情報を削除
             if (AppIni.IsUsePostgreSQL)
             {
-                string sql = $"DELETE FROM public.jma_xml_extra WHERE created < '{DateTime.UtcNow.AddHours(-24).ToString("yyyy-MM-ddTHH:mm:ssZ")}'; ";
-                //_forecastContext.Database.ExecuteSqlCommand(sql);
+                string sql = $"DELETE FROM public.jma_xml_extra WHERE created < '{DateTime.UtcNow.AddHours(-hour).ToString("yyyy-MM-ddTHH:mm:ssZ")}'; ";
+                _forecastContext.Database.ExecuteSqlCommand(sql);
 
-                sql = $"DELETE FROM public.jma_xml_regular WHERE created < '{DateTime.UtcNow.AddHours(-24).ToString("yyyy-MM-ddTHH:mm:ssZ")}'; ";
-                // _forecastContext.Database.ExecuteSqlCommand(sql);
+                sql = $"DELETE FROM public.jma_xml_regular WHERE created < '{DateTime.UtcNow.AddHours(-hour).ToString("yyyy-MM-ddTHH:mm:ssZ")}'; ";
+                _forecastContext.Database.ExecuteSqlCommand(sql);
             }
 
             if (AppIni.IsUseDatastore)
             {
                 var datastore = new JmaDatastore(AppIni.ProjectId);
-                await datastore.DeleteFeedsAsync(24);
+                await datastore.DeleteFeedsAsync(-hour);
             }
         }
 
@@ -144,7 +144,7 @@ namespace JmaXmlClient
 
                 var options = new DbContextOptionsBuilder<ForecastContext>()
                     .UseNpgsql(Configuration.GetConnectionString("ForecastConnection"));
-                
+               
                 using (var context2 = new ForecastContext(options.Options))
                 {
 
@@ -197,7 +197,8 @@ namespace JmaXmlClient
 
                 var options = new DbContextOptionsBuilder<ForecastContext> ()
                     .UseNpgsql(Configuration.GetConnectionString("ForecastConnection"));
-                
+
+             
                 using (var context2 = new ForecastContext(options.Options))
                 {
                     foreach (var data in _forecastContext.JmaJson.Where(x => x.Task == "vpfw50"))
@@ -266,6 +267,7 @@ namespace JmaXmlClient
             var options = new DbContextOptionsBuilder<ForecastContext>()
                 .UseNpgsql(Configuration.GetConnectionString("ForecastConnection"));
           
+           
             using (var context2 = new ForecastContext(options.Options))
             {
 
@@ -282,6 +284,7 @@ namespace JmaXmlClient
                     context2.Database.ExecuteSqlCommand(sql, task, id, forecast, update);
                 }
             }
+      
         }
 
         static async Task ConditionXmlToJson(string task)

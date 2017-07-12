@@ -145,7 +145,7 @@ namespace JmaXml.Common
         {
             Query query = new Query("JmaFeeds")
             {
-                Filter = Filter.LessThan("created", DateTime.UtcNow.AddHours(hour)),
+                Filter = Filter.LessThan("created", DateTime.UtcNow.AddHours(-hour)),
                 Projection = { "__key__" },
                 Limit = 500
             };

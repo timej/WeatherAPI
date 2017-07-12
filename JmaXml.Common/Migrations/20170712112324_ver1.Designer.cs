@@ -8,9 +8,10 @@ using JmaXml.Common.Data;
 namespace JmaXml.Common.Migrations
 {
     [DbContext(typeof(ForecastContext))]
-    partial class ForecastContextModelSnapshot : ModelSnapshot
+    [Migration("20170712112324_ver1")]
+    partial class ver1
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
             modelBuilder
                 .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.SerialColumn)

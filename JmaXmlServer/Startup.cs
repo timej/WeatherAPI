@@ -76,8 +76,10 @@ namespace JmaXmlServer
             AppConst.Ini(Configuration);
 
             //PostgreSQLデータベースの自動作成
+            /*
             if (AppConst.IsOutputToPostgreSQL)
                 forecastContext.Database.Migrate();
+            */
 
         }
     }

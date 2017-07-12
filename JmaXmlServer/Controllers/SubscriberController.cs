@@ -124,6 +124,19 @@ namespace JmaXmlServer.Controllers
                 {
                     DateTime dt = DateTime.UtcNow;
                     string xml = JsonConvert.SerializeObject(jmaXmlFeedList);
+                    if (AppConst.IsOutputToDatastore)
+                    {
+                        try
+                        {
+                            var datastore2 = new JmaDatastore(AppConst.ProjectId);
+                            await datastore2.FeedsInsert(feedtype, xml, dt);
+                        }
+                        catch (Exception e1)
+                        {
+                            LoggerClass.LogError("PostgreSQL Error: " + e1.Message);
+                            return new StatusCodeResult(429);
+                        }
+                    }
                     if (AppConst.IsOutputToPostgreSQL)
                     {
                         try
@@ -134,22 +147,7 @@ namespace JmaXmlServer.Controllers
 
                             int num = _context.Database.ExecuteSqlCommand(sql, created, feeds);
                         }
-                        catch(Exception e1)
-                        {
-                            LoggerClass.LogError("PostgreSQL Error: " + e1.Message);
-                        }
-                    }
-                    if (AppConst.IsOutputToDatastore)
-                    {
-                        try
-                        {
-                            var datastore = new JmaDatastore(AppConst.ProjectId, "JmaXml" + char.ToUpper(feedtype[0]) + feedtype.Substring(1));
-                            await datastore.AddTask(xml, dt);
-
-                            var datastore2 = new JmaDatastore(AppConst.ProjectId);
-                            await datastore2.FeedsInsert(feedtype, xml, dt);
-                        }
-                        catch(Exception e1)
+                        catch (Exception e1)
                         {
                             LoggerClass.LogError("PostgreSQL Error: " + e1.Message);
                             return new StatusCodeResult(429);
