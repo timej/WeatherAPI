@@ -40,7 +40,7 @@ namespace JmaXmlClient
 
         public static void ConfigureServices(IServiceCollection services)
         {
-            if (bool.Parse(Configuration["Output:PostgreSQL"]))
+            if (bool.Parse(Configuration["Database:PostgreSQL"]))
             {
                 services.AddDbContext<ForecastContext>(options => options.UseNpgsql(Configuration.GetConnectionString("ForecastConnection")));
             }
@@ -52,7 +52,7 @@ namespace JmaXmlClient
             ConfigureServices(services);
             var serviceProvider = services.BuildServiceProvider();
 
-            if (bool.Parse(Configuration["Output:PostgreSQL"]))
+            if (bool.Parse(Configuration["Database:PostgreSQL"]))
             {
                 _forecastContext = serviceProvider.GetService<ForecastContext>();
                 //データベースの自動作成
@@ -69,14 +69,18 @@ namespace JmaXmlClient
             //天気予報等
             if (args.Contains("-r"))
             {
-                JmaXmlRegularTask.RegularAsync(_forecastContext).GetAwaiter().GetResult();
-                JmaXmlRegularTask2.RegularAsync(_forecastContext).GetAwaiter().GetResult();
+                if(AppIni.IsUseDatastore)
+                    JmaDsRegularTask.RegularAsync(_forecastContext).GetAwaiter().GetResult();
+                if (AppIni.IsUsePostgreSQL)
+                    JmaPgRegularTask.RegularAsync(_forecastContext).GetAwaiter().GetResult();
             }
             //警報・注意報等
             else if (args.Contains("-e"))
             {
-                JmaXmlExtraTask.ExtraAsync(_forecastContext).GetAwaiter().GetResult();
-                JmaXmlExtraTask2.ExtraAsync(_forecastContext).GetAwaiter().GetResult();
+                if (AppIni.IsUseDatastore)
+                    JmaDsExtraTask.ExtraAsync(_forecastContext).GetAwaiter().GetResult();
+                if (AppIni.IsUsePostgreSQL)
+                    JmaPgExtraTask.ExtraAsync(_forecastContext).GetAwaiter().GetResult();
             }
             //XMLデータから天気予報のJsonデータの一括作成
             else if (args.Contains("-a"))
@@ -99,13 +103,11 @@ namespace JmaXmlClient
 #if !DEBUG
             await Utils.WriteLog("開始");
 #endif
-            var datastore = new JmaDatastore2(AppIni.ProjectId);
-            var data = await datastore.GetJmaUpdateAsync("vpfd50");
 
-            //int office = 360;
-            //var datastore = new JmaDatastore(AppIni.ProjectId, "JmaVpfg50");
-            //string xml = await datastore.GetJmaXmlAsync(office);
-            //var forecast = new JmaForecast(xml, office);
+            int office = 360;
+            var datastore = new JmaDatastore(AppIni.ProjectId);
+            string xml = await datastore.GetJmaXmlAsync("vpfd50", office);
+            var forecast = new JmaForecast(xml, office);
 
 #if !DEBUG
             await Utils.WriteLog("終了");
@@ -114,10 +116,20 @@ namespace JmaXmlClient
 
         static async Task DeleteData()
         {
-            var datastore = new JmaDatastore(AppIni.ProjectId, "JmaXmlExtra");
-            await datastore.DeleteFeedsAsync("JmaXmlExtra");
-            var datastore2 = new JmaDatastore(AppIni.ProjectId, "JmaXmlRegular");
-            await datastore2.DeleteFeedsAsync("JmaXmlRegular");
+            if (AppIni.IsUsePostgreSQL)
+            {
+                string sql = $"DELETE FROM public.jma_xml_extra WHERE created < '{DateTime.UtcNow.AddHours(-24).ToString("yyyy-MM-ddTHH:mm:ssZ")}'; ";
+                //_forecastContext.Database.ExecuteSqlCommand(sql);
+
+                sql = $"DELETE FROM public.jma_xml_regular WHERE created < '{DateTime.UtcNow.AddHours(-24).ToString("yyyy-MM-ddTHH:mm:ssZ")}'; ";
+                // _forecastContext.Database.ExecuteSqlCommand(sql);
+            }
+
+            if (AppIni.IsUseDatastore)
+            {
+                var datastore = new JmaDatastore(AppIni.ProjectId);
+                await datastore.DeleteFeedsAsync(24);
+            }
         }
 
         //天気予報XMLデータから一括して天気予報Jsonデータを作成
@@ -125,10 +137,10 @@ namespace JmaXmlClient
         {
             await Utils.WriteLog("天気予報Jsonデータ一括作成開始");
 
-            if(AppIni.IsOutputToPostgreSQL)
+            if(AppIni.IsUsePostgreSQL)
             {
-                string sql = "INSERT INTO json_vpfg50 (id, forecast, update) VALUES(@id, @forecast, @update) " +
-                    "ON CONFLICT(id) DO UPDATE SET forecast = EXCLUDED.forecast, update = EXCLUDED.update;";
+                string sql = "INSERT INTO jma_json (task, id, forecast, update) VALUES('vpfd50', @id, @forecast, @update) " +
+                    "ON CONFLICT(task, id) DO UPDATE SET forecast = EXCLUDED.forecast, update = EXCLUDED.update;";
 
                 var options = new DbContextOptionsBuilder<ForecastContext>()
                     .UseNpgsql(Configuration.GetConnectionString("ForecastConnection"));
@@ -136,7 +148,7 @@ namespace JmaXmlClient
                 using (var context2 = new ForecastContext(options.Options))
                 {
 
-                    foreach (var data in _forecastContext.JmaVpfg50)
+                    foreach (var data in _forecastContext.JmaXml.Where(x => x.Task == "vpfd50"))
                     {
                         JmaForecast jmaForecast = new JmaForecast(data.Forecast, data.Id);
                         string json = JsonConvert.SerializeObject(jmaForecast);
@@ -150,14 +162,14 @@ namespace JmaXmlClient
                 }
             }
 
-            if (AppIni.IsOutputToDatastore)
+            if (AppIni.IsUseDatastore)
             {
                 //入力側
-                var datastore = new JmaDatastore(AppIni.ProjectId, "JmaVpfg50");
-                var results = await datastore.GetAllJmaXmlAsync("JmaVpfg50");
+                var datastore = new JmaDatastore(AppIni.ProjectId);
+                var results = await datastore.GetAllJmaXmlAsync("JmaXml", "vpfd50");
 
                 //保存側
-                var datasore2 = new JmaDatastore(AppIni.ProjectId, "JsonVpfg50");
+                var datasore2 = new JmaDatastore(AppIni.ProjectId);
                 var entityList = new List<Google.Cloud.Datastore.V1.Entity>();
 
                 foreach (var entity in results.Entities)
@@ -166,7 +178,7 @@ namespace JmaXmlClient
                     var dt = entity.Properties["update"].TimestampValue;
                     int id = (int)entity.Key.Path[0].Id;
                     JmaForecast jmaForecast = new JmaForecast(xml, id);
-                    entityList.Add(datasore2.SetEntity(id, JsonConvert.SerializeObject(jmaForecast), dt.ToDateTime()));
+                    entityList.Add(datasore2.SetEntity("JmaJson", "vpfd50", id, JsonConvert.SerializeObject(jmaForecast), dt.ToDateTime()));
                 }
                 await datasore2.UpsertForecastAsync(entityList);
             }
@@ -178,17 +190,17 @@ namespace JmaXmlClient
         {
             await Utils.WriteLog("週間予報Jsonデータ一括作成開始");
 
-            if (AppIni.IsOutputToPostgreSQL)
+            if (AppIni.IsUsePostgreSQL)
             {
-                string sql = "INSERT INTO json_vpfw50 (id, forecast, update) VALUES(@id, @forecast, @update) " +
-                    "ON CONFLICT(id) DO UPDATE SET forecast = EXCLUDED.forecast, update = EXCLUDED.update;";
+                string sql = "INSERT INTO jma_json (task, id, forecast, update) VALUES('vpfw50', @id, @forecast, @update) " +
+                    "ON CONFLICT(task, id) DO UPDATE SET forecast = EXCLUDED.forecast, update = EXCLUDED.update;";
 
                 var options = new DbContextOptionsBuilder<ForecastContext> ()
                     .UseNpgsql(Configuration.GetConnectionString("ForecastConnection"));
                 
                 using (var context2 = new ForecastContext(options.Options))
                 {
-                    foreach (var data in _forecastContext.JmaVpfw50)
+                    foreach (var data in _forecastContext.JmaJson.Where(x => x.Task == "vpfw50"))
                     {
                         Weekly weekly = new Weekly(data.Forecast, data.Id);
                         string json = JsonConvert.SerializeObject(weekly);
@@ -202,14 +214,14 @@ namespace JmaXmlClient
                 }
             }
 
-            if (AppIni.IsOutputToDatastore)
+            if (AppIni.IsUseDatastore)
             {
                 //入力側
-                var datastore = new JmaDatastore(AppIni.ProjectId, "JmaVpfw50");
-                var results = await datastore.GetAllJmaXmlAsync("JmaVpfw50");
+                var datastore = new JmaDatastore(AppIni.ProjectId);
+                var results = await datastore.GetAllJmaXmlAsync("JmaXml", "vpfw50");
 
                 //保存側
-                var datasore2 = new JmaDatastore(AppIni.ProjectId, "JsonVpfw50");
+                var datasore2 = new JmaDatastore(AppIni.ProjectId);
                 var entityList = new List<Google.Cloud.Datastore.V1.Entity>();
                 foreach (var entity in results.Entities)
                 {
@@ -217,7 +229,7 @@ namespace JmaXmlClient
                     var dt = entity.Properties["update"].TimestampValue;
                     int id = (int)entity.Key.Path[0].Id;
                     Weekly weekly = new Weekly(xml, id);
-                    entityList.Add(datasore2.SetEntity(id, JsonConvert.SerializeObject(weekly), dt.ToDateTime()));
+                    entityList.Add(datasore2.SetEntity("JmaJson", "vpfw50", id, JsonConvert.SerializeObject(weekly), dt.ToDateTime()));
                 }
                 await datasore2.UpsertForecastAsync(entityList);
             }
@@ -229,27 +241,27 @@ namespace JmaXmlClient
         {
             await Utils.WriteLog("天気概況Jsonデータ一括作成開始");
 
-            if (AppIni.IsOutputToPostgreSQL)
+            if (AppIni.IsUsePostgreSQL)
             {
-                PgConditionXmlToJson(_forecastContext.JmaVpfd50, "json_vpfd50");
-                PgConditionXmlToJson(_forecastContext.JmaVpcw50, "json_vpcw50");
-                PgConditionXmlToJson(_forecastContext.JmaVpzw50, "json_vpzw50");
+                PgConditionXmlToJson("vpfg50");
+                PgConditionXmlToJson("vpcw50");
+                PgConditionXmlToJson("vpzw50");
             }
 
-            if (AppIni.IsOutputToDatastore)
+            if (AppIni.IsUseDatastore)
             {
-                await ConditionXmlToJson("JmaVpfd50", "JsonVpfd50");
-                await ConditionXmlToJson("JmaVpcw50", "JsonVpcw50");
-                await ConditionXmlToJson("JmaVpzw50", "JsonVpzw50");
+                await ConditionXmlToJson("vpfg50");
+                await ConditionXmlToJson("vpcw50");
+                await ConditionXmlToJson("vpzw50");
             }
 
             await Utils.WriteLog("天気概況Jsonデータ一括作成終了");
         }
 
-        static void PgConditionXmlToJson<T>(DbSet<T> dbset, string JsonTable) where T: ForecastTable
+        static void PgConditionXmlToJson(string jmaTask)
         {
-            string sql = $"INSERT INTO {JsonTable} (id, forecast, update) VALUES(@id, @forecast, @update) " +
-                "ON CONFLICT(id) DO UPDATE SET forecast = EXCLUDED.forecast, update = EXCLUDED.update;";
+            string sql = $"INSERT INTO jma_json (task, id, forecast, update) VALUES(@task, @id, @forecast, @update) " +
+                "ON CONFLICT(task, id) DO UPDATE SET forecast = EXCLUDED.forecast, update = EXCLUDED.update;";
 
             var options = new DbContextOptionsBuilder<ForecastContext>()
                 .UseNpgsql(Configuration.GetConnectionString("ForecastConnection"));
@@ -257,29 +269,30 @@ namespace JmaXmlClient
             using (var context2 = new ForecastContext(options.Options))
             {
 
-                foreach (var data in dbset)
+                foreach (var data in _forecastContext.JmaXml.Where(x => x.Task == jmaTask))
                 {
                     WeatherConditions conditions = new WeatherConditions(data.Forecast, data.Id);
                     string json = JsonConvert.SerializeObject(conditions);
 
+                    NpgsqlParameter task = new NpgsqlParameter("task", jmaTask);
                     NpgsqlParameter id = new NpgsqlParameter("id", data.Id);
                     NpgsqlParameter update = new NpgsqlParameter("update", data.Update);
                     NpgsqlParameter forecast = new NpgsqlParameter("forecast", json);
 
-                    context2.Database.ExecuteSqlCommand(sql, id, forecast, update);
+                    context2.Database.ExecuteSqlCommand(sql, task, id, forecast, update);
                 }
             }
         }
 
-        static async Task ConditionXmlToJson(string kindXml, string kindJson)
+        static async Task ConditionXmlToJson(string task)
         {
             //入力側
-            var datastore1 = new JmaDatastore(AppIni.ProjectId, kindXml);
+            var datastore1 = new JmaDatastore(AppIni.ProjectId);
             //保存側
-            var datastore2 = new JmaDatastore(AppIni.ProjectId, kindJson);
+            var datastore2 = new JmaDatastore(AppIni.ProjectId);
             var entityList = new List<Google.Cloud.Datastore.V1.Entity>();
 
-            var results = await datastore1.GetAllJmaXmlAsync(kindXml);
+            var results = await datastore1.GetAllJmaXmlAsync("JmaXml", task);
 
             foreach (var entity in results.Entities)
             {
@@ -287,7 +300,7 @@ namespace JmaXmlClient
                 var dt = entity.Properties["update"].TimestampValue;
                 int id = (int)entity.Key.Path[0].Id;
                 var conditions = new WeatherConditions(xml, id);
-                entityList.Add(datastore2.SetEntity(id, JsonConvert.SerializeObject(conditions), dt.ToDateTime()));
+                entityList.Add(datastore2.SetEntity("JmaJson", task, id, JsonConvert.SerializeObject(conditions), dt.ToDateTime()));
             }
             await datastore2.UpsertForecastAsync(entityList);
         }

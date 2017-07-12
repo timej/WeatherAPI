@@ -146,7 +146,7 @@ namespace JmaXmlServer.Controllers
                             var datastore = new JmaDatastore(AppConst.ProjectId, "JmaXml" + char.ToUpper(feedtype[0]) + feedtype.Substring(1));
                             await datastore.AddTask(xml, dt);
 
-                            var datastore2 = new JmaDatastore2(AppConst.ProjectId);
+                            var datastore2 = new JmaDatastore(AppConst.ProjectId);
                             await datastore2.FeedsInsert(feedtype, xml, dt);
                         }
                         catch(Exception e1)
@@ -178,7 +178,7 @@ namespace JmaXmlServer.Controllers
 
         public async Task<IActionResult> Test()
         {
-            var datastore = new JmaDatastore2(AppConst.ProjectId);
+            var datastore = new JmaDatastore(AppConst.ProjectId);
             await datastore.FeedsInsert("test", "Datastoreのテスト", DateTime.UtcNow);
 
             return Content("OK");

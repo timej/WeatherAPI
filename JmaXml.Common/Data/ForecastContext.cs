@@ -8,6 +8,9 @@ namespace JmaXml.Common.Data
 {
     public class ForecastContext : DbContext
     {
+        public DbSet<JmaXml> JmaXml { get; set; }
+        public DbSet<JmaJson> JmaJson { get; set; }
+
         public DbSet<JmaVpfg50> JmaVpfg50 { get; set; }
         public DbSet<JmaVpfw50> JmaVpfw50 { get; set; }
         public DbSet<JmaVpfd50> JmaVpfd50 { get; set; }
@@ -38,9 +41,16 @@ namespace JmaXml.Common.Data
         public ForecastContext(DbContextOptions<ForecastContext> options) : base(options)
         {
         }
-
+        
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<JmaXml>()
+                .ToTable("jma_xml")
+                .HasKey(t => new { t.Task, t.Id });
+            modelBuilder.Entity<JmaJson>()
+                .ToTable("jma_json")
+                .HasKey(t => new { t.Task, t.Id });
+
             modelBuilder.Entity<JmaVpfg50>()
                 .ToTable("jma_vpfg50");
             modelBuilder.Entity<JmaVpfw50>()
