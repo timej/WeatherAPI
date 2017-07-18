@@ -69,79 +69,73 @@ namespace JmaXmlClient
             if (args.Contains("-r"))
             {
                 if (AppIni.IsUseDatastore)
-                    JmaDsRegularTask.RegularAsync(_forecastContext).GetAwaiter().GetResult();
+                    JmaDsRegularTask.RegularAsync().GetAwaiter().GetResult();
                 if (AppIni.IsUsePostgreSQL)
                     JmaPgRegularTask.RegularAsync(_forecastContext).GetAwaiter().GetResult();
-                return;
             }
             //警報・注意報等
             else if (args.Contains("-e"))
             {
                 if (AppIni.IsUseDatastore)
-                    JmaDsExtraTask.ExtraAsync(_forecastContext).GetAwaiter().GetResult();
+                    JmaDsExtraTask.ExtraAsync().GetAwaiter().GetResult();
                 if (AppIni.IsUsePostgreSQL)
                     JmaPgExtraTask.ExtraAsync(_forecastContext).GetAwaiter().GetResult();
-                return;
+            }
+            //気象庁防災情報XML電文のPULL型を利用する場合
+            else if (args.Contains("-p"))
+            {
+                if (AppIni.IsUseDatastore)
+                    JmaPull.PullAsync().GetAwaiter().GetResult();
             }
             //XMLデータから天気予報のJsonデータの一括作成
             else if (args.Contains("-a"))
             {
                 MakeJsonData().GetAwaiter().GetResult();
-                return;
             }
             //XMLデータからWeeklyJsonデータの一括作成
             else if (args.Contains("-w"))
             {
                 MakeWeeklyJsonData().GetAwaiter().GetResult();
-                return;
             }
             //XMLデータから天気概況のJsopnデータの一括作成
             else if (args.Contains("-g"))
             {
                 WeatherConditionJsonData().GetAwaiter().GetResult();
-                return;
             }
             //サマリーの作成
             else if (args.Contains("-s"))
             {
                 SetSummary().GetAwaiter().GetResult();
-                return;
             }
             //サマリーの保存
             else if (args.Contains("-t"))
             {
                 SetSummarySave().GetAwaiter().GetResult();
-                return;
             }
             //サマリーのチェック
             else if (args.Contains("-k"))
             {
                 SummaryCheck().GetAwaiter().GetResult();
-                return;
             }
             //週間予報サマリーの作成
             else if (args.Contains("-m"))
             {
                 SetWeeklySummary().GetAwaiter().GetResult();
-                return;
             }
             //週間予報サマリーの保存
             else if (args.Contains("-n"))
             {
                 SetWeeklySummarySave().GetAwaiter().GetResult();
-                return;
             }
             //週間予報サマリーのチェック
             else if (args.Contains("-o"))
             {
                 WeeklySummaryCheck().GetAwaiter().GetResult();
-                return;
             }
             //古いデータの削除
             else if (args.Contains("-d"))
             {
                 DeleteData().GetAwaiter().GetResult();
-                return;
             }
             else
                 MainAsync().GetAwaiter().GetResult();

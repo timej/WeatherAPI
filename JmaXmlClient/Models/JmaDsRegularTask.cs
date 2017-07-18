@@ -14,7 +14,7 @@ namespace JmaXmlClient.Models
 {
     public class JmaDsRegularTask
     {
-        public static async Task RegularAsync(ForecastContext forecastContext)
+        public static async Task RegularAsync()
         {
             await Utils.WriteLog("予報開始");
             var feedList = new List<JmaFeedData2>();
@@ -74,7 +74,7 @@ namespace JmaXmlClient.Models
 
 
         //天気予報等の処理-Datastoreを使用
-        static async Task UpsertData(List<JmaFeedData2> forecastList)
+        internal static async Task UpsertData(List<JmaFeedData2> forecastList)
         {
             var datastore1 = new JmaDatastore(AppIni.ProjectId);
             var datastore2 = new JmaDatastore(AppIni.ProjectId);

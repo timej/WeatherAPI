@@ -15,7 +15,7 @@ namespace JmaXmlClient.Models
 {
     public class JmaDsExtraTask
     {
-        public static async Task ExtraAsync(ForecastContext forecastContext)
+        public static async Task ExtraAsync()
         {
             await Utils.WriteLog("注意報開始");
             var feedList = new List<JmaFeedData2>();
@@ -78,7 +78,7 @@ namespace JmaXmlClient.Models
             }
         }
 
-        private static async Task UpsertData(List<JmaFeedData2> forecastList)
+        internal static async Task UpsertData(List<JmaFeedData2> forecastList)
         {
      
             var datastore = new JmaDatastore(AppIni.ProjectId);

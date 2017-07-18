@@ -17,7 +17,7 @@ namespace JmaXmlClient.Models
                                      | DecompressionMethods.Deflate
         });
 
-        private const string UserAgent = "bot by push.yniji.net";
+        private const string UserAgent = "bot by WeatherAPI";
 
         public static async Task<string> GetJmaXml(string link, int ntry = 0)
         {
