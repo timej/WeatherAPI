@@ -87,7 +87,7 @@ namespace JmaXmlClient.Models
 
                 await JmaDsRegularTask.UpsertData(feedList);
 
-                using (var sw = new StreamWriter(File.Open(path, FileMode.Open, FileAccess.Write)))
+                using (var sw = new StreamWriter(File.Open(path, FileMode.Create, FileAccess.Write)))
                 {
                     sw.Write(nowId);
                 }
@@ -155,7 +155,7 @@ namespace JmaXmlClient.Models
 
                 await JmaDsExtraTask.UpsertData(feedList);
 
-                using (var sw = new StreamWriter(File.Open(path, FileMode.Open, FileAccess.Write)))
+                using (var sw = new StreamWriter(File.Open(path, FileMode.Create, FileAccess.Write)))
                 {
                     sw.Write(nowId);
                 }
