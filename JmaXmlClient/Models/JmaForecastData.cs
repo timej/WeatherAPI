@@ -5,7 +5,7 @@ using System.Text;
 
 namespace JmaXmlClient.Models
 {
-    class JmaForecastData
+    public class JmaForecastData
     {
         [JsonProperty("id")]
         public int Id { get; set; }

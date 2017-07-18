@@ -28,10 +28,6 @@
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="1.1.0" />
     <PackageReference Include="System.Text.Encoding.CodePages" Version="4.3.0" />
   </ItemGroup>
-  
-  <ItemGroup>
-    <Folder Include="App_Data\" />
-  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\JmaXml.Common\JmaXml.Common.csproj" />
@@ -45,5 +41,13 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
+
+  <ItemGroup>
+    <None Update="App_Data\stations.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ProjectExtensions><VisualStudio><UserProperties App_3Data_4stations_1json__JSONSchema="http://jsonapi.org/schema" /></VisualStudio></ProjectExtensions>
 
 </Project>

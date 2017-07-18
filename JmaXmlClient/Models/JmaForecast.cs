@@ -5,12 +5,13 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Xml.Linq;
+using JmaXml.Common;
 
 //気象庁防災情報XMLの天気予報をJson形式に変換するプログラム
 
 namespace JmaXmlClient.Models
 {
-    class JmaForecast: JmaForecastBase
+    public class JmaForecast: JmaForecastBase
     {
         [JsonProperty("td")]
         public List<DateTime> TimeDefine { get; private set; }
@@ -30,10 +31,10 @@ namespace JmaXmlClient.Models
         private List<ThreeHourlyAreaData> ThreeHourlyAreaDataList;
         private List<ThreeHourlyPointData> ThreeHourlyPointDataList;
 
-
+        public JmaForecast():base ()
+        { }
         public JmaForecast(string xml, int pref) : base (xml, pref)
         {
-            
             try
             {
                 var mi = xe.Descendants(Utils.XmlnsJmxEx + "MeteorologicalInfos");
@@ -72,24 +73,45 @@ namespace JmaXmlClient.Models
                         WindForecast = data.WindForecast,
                         WaveHeight = data.WaveHeight,
                         ProbabilityOfPrecipitation = data.ProbabilityOfPrecipitation,
-                        JmaPointForecastList = new List<JmaPointForecastData>()
+                        JmaPointForecastList = new List<JmaPointForecastData> {
+                            null
+                        }
                     });
                 }
 
-                int n = 0;
-                int code = ThreeHourlyPointDataList.Count <= 1 ? 0 : ThreeHourlyPointDataList[1].StationCode;
-
                 foreach (var forecast in PointForecastList)
                 {
-                    if (forecast.StationCode == code)
+
+                    int num = ThreeHourlyPointDataList.FindIndex(x => x.StationCode == forecast.StationCode);
+                    if (num > -1)
                     {
-                        n++;
-                        code = ThreeHourlyPointDataList.Count <= (n + 1) ? 0 : ThreeHourlyPointDataList[n + 1].StationCode;
+                        JmaForecastData[num].JmaPointForecastList[0] = forecast;
                     }
-                    JmaForecastData[n].JmaPointForecastList.Add(forecast);
+                    else
+                    {
+                        var forecastArea = JmaForecastArea.ForecastAreaOfStations;
+                        var forecastAreaData = forecastArea.FirstOrDefault(x => x.観測所コード == forecast.StationCode);
+
+                        if(true)
+                        //if (forecastAreaData == null)
+                        {
+                            forecastAreaData = forecastArea.FirstOrDefault(x => x.地点 == forecast.StationName && x.気象区コード / 1000 == pref);
+                            if (forecastAreaData == null)
+                            {
+                                Utils.WriteLog($"観測所コード: {forecast.StationCode} 地点名: {forecast.StationName} は、観測所気象区コード表にありません。").Wait();
+                                continue;
+                            }
+                            else
+                                Utils.WriteLog($"観測所気象区コード表で、地点名: {forecast.StationName} の観測所コード: {forecast.StationCode} に変更があったようです。").Wait();
+                        }
+                           
+                        int code = (forecastAreaData.気象区コード / 10 == 1101) ? 11000 : forecastAreaData.気象区コード / 10 * 10;
+                        var forecastData = JmaForecastData.First(x => x.Id == code);
+                        forecastData.JmaPointForecastList.Add(forecast);
+                    }
                 }
 
-                n = 0;
+                int n = 0;
                 foreach (var threeHourly in ThreeHourlyAreaDataList)
                 {
                     JmaForecastData[n].ThreeHourlyWeather = threeHourly.Weather;
@@ -108,7 +130,7 @@ namespace JmaXmlClient.Models
             }
             catch(Exception e1)
             {
-                Utils.WriteLog($"JmaForecastでエラー {e1.Message}").GetAwaiter().GetResult();
+                Utils.WriteLog($"JmaForecastでエラー {pref} {e1.Message}").GetAwaiter().GetResult();
             }
         }
 

@@ -5,7 +5,7 @@ using System.Text;
 
 namespace JmaXmlClient.Models
 {
-    class JmaPointForecastData
+    public class JmaPointForecastData
     {
         [JsonProperty("sc")]
         public int StationCode { get; set; }

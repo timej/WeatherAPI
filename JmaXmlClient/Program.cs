@@ -55,7 +55,7 @@ namespace JmaXmlClient
             {
                 _forecastContext = serviceProvider.GetService<ForecastContext>();
                 //データベースの自動作成
-                _forecastContext.Database.Migrate();
+                //_forecastContext.Database.Migrate();
             }
 
 
@@ -68,10 +68,11 @@ namespace JmaXmlClient
             //天気予報等
             if (args.Contains("-r"))
             {
-                if(AppIni.IsUseDatastore)
+                if (AppIni.IsUseDatastore)
                     JmaDsRegularTask.RegularAsync(_forecastContext).GetAwaiter().GetResult();
                 if (AppIni.IsUsePostgreSQL)
                     JmaPgRegularTask.RegularAsync(_forecastContext).GetAwaiter().GetResult();
+                return;
             }
             //警報・注意報等
             else if (args.Contains("-e"))
@@ -80,19 +81,68 @@ namespace JmaXmlClient
                     JmaDsExtraTask.ExtraAsync(_forecastContext).GetAwaiter().GetResult();
                 if (AppIni.IsUsePostgreSQL)
                     JmaPgExtraTask.ExtraAsync(_forecastContext).GetAwaiter().GetResult();
+                return;
             }
             //XMLデータから天気予報のJsonデータの一括作成
             else if (args.Contains("-a"))
+            {
                 MakeJsonData().GetAwaiter().GetResult();
+                return;
+            }
             //XMLデータからWeeklyJsonデータの一括作成
             else if (args.Contains("-w"))
+            {
                 MakeWeeklyJsonData().GetAwaiter().GetResult();
+                return;
+            }
             //XMLデータから天気概況のJsopnデータの一括作成
             else if (args.Contains("-g"))
+            {
                 WeatherConditionJsonData().GetAwaiter().GetResult();
+                return;
+            }
+            //サマリーの作成
+            else if (args.Contains("-s"))
+            {
+                SetSummary().GetAwaiter().GetResult();
+                return;
+            }
+            //サマリーの保存
+            else if (args.Contains("-t"))
+            {
+                SetSummarySave().GetAwaiter().GetResult();
+                return;
+            }
+            //サマリーのチェック
+            else if (args.Contains("-k"))
+            {
+                SummaryCheck().GetAwaiter().GetResult();
+                return;
+            }
+            //週間予報サマリーの作成
+            else if (args.Contains("-m"))
+            {
+                SetWeeklySummary().GetAwaiter().GetResult();
+                return;
+            }
+            //週間予報サマリーの保存
+            else if (args.Contains("-n"))
+            {
+                SetWeeklySummarySave().GetAwaiter().GetResult();
+                return;
+            }
+            //週間予報サマリーのチェック
+            else if (args.Contains("-o"))
+            {
+                WeeklySummaryCheck().GetAwaiter().GetResult();
+                return;
+            }
             //古いデータの削除
             else if (args.Contains("-d"))
+            {
                 DeleteData().GetAwaiter().GetResult();
+                return;
+            }
             else
                 MainAsync().GetAwaiter().GetResult();
         }
@@ -176,7 +226,7 @@ namespace JmaXmlClient
                 {
                     string xml = entity.Properties["forecast"].StringValue;
                     var dt = entity.Properties["update"].TimestampValue;
-                    int id = (int)entity.Key.Path[0].Id;
+                    int id = (int)entity.Key.Path[1].Id;
                     JmaForecast jmaForecast = new JmaForecast(xml, id);
                     entityList.Add(datasore2.SetEntity("JmaJson", "vpfd50", id, JsonConvert.SerializeObject(jmaForecast), dt.ToDateTime()));
                 }
@@ -228,7 +278,7 @@ namespace JmaXmlClient
                 {
                     string xml = entity.Properties["forecast"].StringValue;
                     var dt = entity.Properties["update"].TimestampValue;
-                    int id = (int)entity.Key.Path[0].Id;
+                    int id = (int)entity.Key.Path[1].Id;
                     Weekly weekly = new Weekly(xml, id);
                     entityList.Add(datasore2.SetEntity("JmaJson", "vpfw50", id, JsonConvert.SerializeObject(weekly), dt.ToDateTime()));
                 }
@@ -301,11 +351,130 @@ namespace JmaXmlClient
             {
                 string xml = entity.Properties["forecast"].StringValue;
                 var dt = entity.Properties["update"].TimestampValue;
-                int id = (int)entity.Key.Path[0].Id;
+                int id = (int)entity.Key.Path[1].Id;
                 var conditions = new WeatherConditions(xml, id);
                 entityList.Add(datastore2.SetEntity("JmaJson", task, id, JsonConvert.SerializeObject(conditions), dt.ToDateTime()));
             }
             await datastore2.UpsertForecastAsync(entityList);
+        }
+
+        static async Task SetSummary()
+        {
+            await Utils.WriteLog("天気予報サマリー作成開始");
+            var datastore = new JmaDatastore(AppIni.ProjectId);
+            var dataList = await datastore.GetAllJmaXmlAsync("JmaJson", "vpfd50");
+            var forcastList = new List<JmaForecast>();
+            foreach(var data in dataList.Entities)
+            {
+                forcastList.Add(JsonConvert.DeserializeObject<JmaForecast>(data.Properties["forecast"].StringValue));
+            }
+            await JmaDsRegularTask.SetSummary(forcastList);
+            await Utils.WriteLog("天気予報サマリー作成終了");
+        }
+
+        static async Task SetSummarySave()
+        {
+            await Utils.WriteLog("天気予報サマリー保存開始");
+            var datastore = new JmaDatastore(AppIni.ProjectId);
+            string json = await datastore.GetInfoDataAsync("forecastSummaries");
+            await datastore.SetInfoDataAsnc("forecastSummaries" + GetForecastTime().ToString("yyyyMMddTHH") + "f", json, DateTime.UtcNow);
+            await Utils.WriteLog("天気予報サマリー保存終了");
+        }
+
+        static async Task SummaryCheck()
+        {
+            await Utils.WriteLog("天気予報サマリーチェック開始");
+            var datastore = new JmaDatastore(AppIni.ProjectId);
+            string json = await datastore.GetInfoDataAsync("forecastSummaries");
+            var jmaForecastSummary = JsonConvert.DeserializeObject<JmaForecastSummary>(json);
+            if(jmaForecastSummary.TimeDefine[0].ToUniversalTime() != GetForecastTime())
+            {
+                json = await datastore.GetInfoDataAsync("forecastSummaries" + GetForecastTime().ToString("yyyyMMddTHH"));
+                await datastore.SetInfoDataAsnc("forecastSummaries", json, DateTime.UtcNow);
+                await Utils.WriteLog("天気予報サマリーの更新ができていませんでした。");
+                return;
+            }
+            await Utils.WriteLog("天気予報サマリーチェック終了");
+        }
+
+        private static DateTime GetForecastTime()
+        {
+            var now = DateTime.UtcNow;
+            var date = now.Date;
+            var h = now.Hour;
+            if (now.Minute > 40)
+                h++;
+            //11時
+            if (h < 2)
+                return date.AddHours(-4);
+            //17時
+            else if (h < 8)
+                return date.AddHours(2);
+            //5時
+            else if (h < 20)
+                return date.AddHours(8);
+            else
+            {
+                return date.AddHours(20);
+            }
+        }
+
+        static async Task SetWeeklySummary()
+        {
+            await Utils.WriteLog("週間予報サマリー作成開始");
+            var datastore = new JmaDatastore(AppIni.ProjectId);
+            var dataList = await datastore.GetAllJmaXmlAsync("JmaJson", "vpfw50");
+            var forcastList = new List<Weekly>();
+            foreach (var data in dataList.Entities)
+            {
+                forcastList.Add(JsonConvert.DeserializeObject<Weekly>(data.Properties["forecast"].StringValue));
+            }
+            await JmaDsRegularTask.SetWeeklySummary(forcastList);
+            await Utils.WriteLog("週間予報サマリー作成終了");
+        }
+
+        //11時と17時の28分にRun
+        static async Task SetWeeklySummarySave()
+        {
+            await Utils.WriteLog("週間予報サマリー保存開始");
+            var datastore = new JmaDatastore(AppIni.ProjectId);
+            string json = await datastore.GetInfoDataAsync("weeklySummaries");
+            await datastore.SetInfoDataAsnc("weeklySummaries" + GetWeeklyForecastTime().ToString("yyyyMMddTHH") + "f", json, DateTime.UtcNow);
+            await Utils.WriteLog("週間予報サマリー保存終了");
+        }
+
+        //11時と17時の58分にRun
+        static async Task WeeklySummaryCheck()
+        {
+            await Utils.WriteLog("週間予報サマリーチェック開始");
+            var datastore = new JmaDatastore(AppIni.ProjectId);
+            string json = await datastore.GetInfoDataAsync("weeklySummaries");
+            var weeklySummary = JsonConvert.DeserializeObject<WeeklySummary>(json);
+            if (weeklySummary.ReportDateTime < GetWeeklyForecastTime())
+            {
+                json = await datastore.GetInfoDataAsync("weeklySummaries" + GetForecastTime().ToString("yyyyMMddTHH"));
+                await datastore.SetInfoDataAsnc("weeklySummaries", json, DateTime.UtcNow);
+                await Utils.WriteLog("週間予報サマリーの更新ができていませんでした。");
+                return;
+            }
+            await Utils.WriteLog("週間予報サマリーチェック終了");
+        }
+
+        private static DateTime GetWeeklyForecastTime()
+        {
+            var now = DateTime.UtcNow;
+            var date = now.Date;
+            var h = now.Hour;
+            if (now.Minute > 30)
+                h++;
+            //11時
+            if (h < 2)
+                return date.AddHours(-16);
+            //17時
+            else if (h < 8)
+                return date.AddHours(2);
+            else
+                return date.AddHours(8);
         }
     }
 }

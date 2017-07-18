@@ -80,6 +80,8 @@ namespace JmaXmlClient.Models
             var datastore2 = new JmaDatastore(AppIni.ProjectId);
             var entityList1 = new List<Entity>();
             var entityList2 = new List<Entity>();
+            var vpfd50List = new List<JmaForecast>();
+            var vpfw50List = new List<Weekly>();
 
             foreach (var forecast in forecastList)
             {
@@ -87,9 +89,9 @@ namespace JmaXmlClient.Models
                 entityList1.Add(datastore1.SetEntity("JmaXml", forecast.Task, forecast.Id, xml, forecast.UpdateTime.ToUniversalTime()));
                 string json;
                 if(forecast.Task == "vpfd50")
-                    json = JsonVpfd50(xml, forecast.Id);
+                    json = JsonVpfd50(xml, forecast.Id, vpfd50List);
                 else if(forecast.Task == "vpfw50")
-                    json = JsonVpfw50(xml, forecast.Id);
+                    json = JsonVpfw50(xml, forecast.Id, vpfw50List);
                 else
                     json = JsonCondition(xml, forecast.Id);
                 entityList2.Add(datastore2.SetEntity("JmaJson", forecast.Task, forecast.Id, json, forecast.UpdateTime.ToUniversalTime()));
@@ -97,18 +99,30 @@ namespace JmaXmlClient.Models
 
             await datastore1.UpsertForecastAsync(entityList1);
             await datastore2.UpsertForecastAsync(entityList2);
+
+            if(vpfd50List.Any())
+            {
+                await SetSummary(vpfd50List);
+            }
+
+            if (vpfw50List.Any())
+            {
+                await SetWeeklySummary(vpfw50List);
+            }
         }
 
 
-        static string JsonVpfd50(string xml, int id)
+        static string JsonVpfd50(string xml, int id, List<JmaForecast> jmaForecastList)
         {
             JmaForecast jmaForecast = new JmaForecast(xml, id);
+            jmaForecastList.Add(jmaForecast);
             return JsonConvert.SerializeObject(jmaForecast);
         }
 
-        static string JsonVpfw50(string xml, int id)
+        static string JsonVpfw50(string xml, int id, List<Weekly> weeklyList)
         {
             Weekly weekly = new Weekly(xml, id);
+            weeklyList.Add(weekly);
             return JsonConvert.SerializeObject(weekly);
         }
 
@@ -116,6 +130,58 @@ namespace JmaXmlClient.Models
         {
             var conditions = new WeatherConditions(xml, id);
             return JsonConvert.SerializeObject(conditions);
+        }
+
+        internal static async Task SetSummary(List<JmaForecast> forecastList)
+        {
+            var (date, type) = JmaForecastSummary.GetForecastTime();
+            if (type == 0)
+            {
+                var datastore = new JmaDatastore(AppIni.ProjectId);
+                string json = await datastore.GetInfoDataAsync("forecastSummaries");
+                var summary = new JmaForecastSummary(json);
+                summary.ChangeJmaForecastSummary(forecastList, date);
+                await datastore.SetInfoDataAsnc("forecastSummaries", JsonConvert.SerializeObject(summary), DateTime.UtcNow);
+            }
+            else
+            {
+                var datastore = new JmaDatastore(AppIni.ProjectId);
+                string json = await datastore.GetInfoDataAsync("forecastSummaries" + date.ToString("yyyyMMddTHH"));
+                var summary = new JmaForecastSummary(json);
+                summary.ChangeJmaForecastSummary(forecastList, date);
+                string json2 = JsonConvert.SerializeObject(summary);
+                await datastore.SetInfoDataAsnc("forecastSummaries" + date.ToString("yyyyMMddTHH"), json2, DateTime.UtcNow);
+                if ((type == 2 && !summary.PrefForecastSummaries.Any(x => x.ReportDateTime == default(DateTime))) || type == 3)
+                {
+                    await datastore.SetInfoDataAsnc("forecastSummaries", json2, DateTime.UtcNow);
+                }
+            }
+        }
+
+        internal static async Task SetWeeklySummary(List<Weekly> weeklyList)
+        {
+            var (date, type) = WeeklySummary.GetForecastTime();
+            if (type == 0)
+            {
+                var datastore = new JmaDatastore(AppIni.ProjectId);
+                string json = await datastore.GetInfoDataAsync("weeklySummaries");
+                var summary = new WeeklySummary(json);
+                summary.ChangeWeeklySummary(weeklyList, date);
+                await datastore.SetInfoDataAsnc("weeklySummaries", JsonConvert.SerializeObject(summary), DateTime.UtcNow);
+            }
+            else
+            {
+                var datastore = new JmaDatastore(AppIni.ProjectId);
+                string json = await datastore.GetInfoDataAsync("weeklySummaries" + date.ToString("yyyyMMddTHH"));
+                var summary = new WeeklySummary(json);
+                summary.ChangeWeeklySummary(weeklyList, date);
+                string json2 = JsonConvert.SerializeObject(summary);
+                await datastore.SetInfoDataAsnc("weeklySummaries" + date.ToString("yyyyMMddTHH"), json2, DateTime.UtcNow);
+                if ((type == 2 && !summary.PrefWeeklySummaries.Any(x => x.ReportDateTime == default(DateTime))) || type == 3)
+                {
+                    await datastore.SetInfoDataAsnc("weeklySummaries", json2, DateTime.UtcNow);
+                }
+            }
         }
     }
 }

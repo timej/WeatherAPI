@@ -17,6 +17,8 @@ namespace JmaXmlClient.Models
         [JsonProperty("wd")]
         public List<WeeklyData> WeeklyDataList { get; set; }
 
+        internal Weekly()
+        { }
 
         internal Weekly(string xml, int pref) : base(xml, pref)
         {

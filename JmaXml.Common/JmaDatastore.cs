@@ -145,7 +145,7 @@ namespace JmaXml.Common
         {
             Query query = new Query("JmaFeeds")
             {
-                Filter = Filter.LessThan("created", DateTime.UtcNow.AddHours(-hour)),
+                Filter = Filter.LessThan("created", DateTime.UtcNow.AddHours(hour)),
                 Projection = { "__key__" },
                 Limit = 500
             };
@@ -158,6 +158,39 @@ namespace JmaXml.Common
                 await _db.DeleteAsync(entries.Entities);
                 await Task.Delay(1000);
             }
+        }
+
+        public async Task SetInfoDataAsnc(string keyname, string data, DateTime dt)
+        {
+            Entity entity = new Entity()
+            {
+                Key = _db.CreateKeyFactory("JmaXmlInfo").CreateKey(keyname),
+                ["data"] = new Value()
+                {
+                    StringValue = data,
+                    ExcludeFromIndexes = true
+                },
+                ["update"] = dt
+            };
+            await _db.UpsertAsync(entity);
+        }
+
+        public async Task<string> GetInfoDataAsync(string keyname)
+        {
+            var key = _db.CreateKeyFactory("JmaXmlInfo").CreateKey(keyname);
+            Entity entity = await _db.LookupAsync(key);
+            if (entity == null)
+                return null;
+            return entity.Properties["data"].StringValue;
+        }
+
+        public string GetWeatherData(string keyname)
+        {
+            var key = _db.CreateKeyFactory("weatherData").CreateKey(keyname);
+            Entity entity = _db.Lookup(key);
+            if (entity == null)
+                return null;
+            return entity.Properties["data"].StringValue;
         }
     }
 }

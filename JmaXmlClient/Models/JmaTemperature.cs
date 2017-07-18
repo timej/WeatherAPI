@@ -5,7 +5,7 @@ using System.Text;
 
 namespace JmaXmlClient.Models
 {
-    class JmaTemperature
+    public class JmaTemperature
     {
         [JsonProperty("min")]
         public int? Min { get; set; }

@@ -7,7 +7,7 @@ using System.Xml.Linq;
 
 namespace JmaXmlClient.Models
 {
-    class JmaForecastBase
+    public class JmaForecastBase
     {
         [JsonProperty("pref")]
         public int Prefecture { get; set; }
@@ -19,7 +19,8 @@ namespace JmaXmlClient.Models
         public DateTime ReportDateTime { get; set; }
 
         protected XElement xe;
-
+        public JmaForecastBase()
+        { }
         public JmaForecastBase (string xml, int pref)
         {
             Prefecture = pref;
