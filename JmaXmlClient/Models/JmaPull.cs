@@ -32,7 +32,7 @@ namespace JmaXmlClient.Models
         {
             try
             {
-                string xml = await JmaHttpClient.GetPullFeeds(url);
+                string xml = await JmaHttpClient.GetJmaXml(url);
                 XDocument xdoc = XDocument.Parse(xml);
 
                 string path = Path.Combine(AppIni.DataPath, "RegularFeedId.txt");
@@ -95,13 +95,13 @@ namespace JmaXmlClient.Models
                             Link = entry.Element(Xmlns + "link").Attribute("href").Value
                         });
                     }
+                }
 
-                    await JmaDsRegularTask.UpsertData(feedList);
+                await JmaDsRegularTask.UpsertData(feedList);
 
-                    using (var sw = new StreamWriter(File.Open(path, FileMode.Create, FileAccess.Write)))
-                    {
-                        sw.Write(nowId);
-                    }
+                using (var sw = new StreamWriter(File.Open(path, FileMode.Create, FileAccess.Write)))
+                {
+                    sw.Write(nowId);
                 }
             }
             catch (Exception e1)
@@ -113,7 +113,7 @@ namespace JmaXmlClient.Models
         {
             try
             {
-                string xml = await JmaHttpClient.GetPullFeeds(url);
+                string xml = await JmaHttpClient.GetJmaXml(url);
                 XDocument xdoc = XDocument.Parse(xml);
 
                 string path = Path.Combine(AppIni.DataPath, "ExtraFeedId.txt");
@@ -168,13 +168,13 @@ namespace JmaXmlClient.Models
                             Link = entry.Element(Xmlns + "link").Attribute("href").Value
                         });
                     }
+                }
 
-                    await JmaDsExtraTask.UpsertData(feedList);
+                await JmaDsExtraTask.UpsertData(feedList);
 
-                    using (var sw = new StreamWriter(File.Open(path, FileMode.Create, FileAccess.Write)))
-                    {
-                        sw.Write(nowId);
-                    }
+                using (var sw = new StreamWriter(File.Open(path, FileMode.Create, FileAccess.Write)))
+                {
+                    sw.Write(nowId);
                 }
             }
             catch(Exception e1)

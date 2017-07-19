@@ -17,12 +17,6 @@ namespace JmaXmlClient.Models
                                      | DecompressionMethods.Deflate
         });
 
-        private static readonly HttpClient Client1 = new HttpClient(new HttpClientHandler
-        {
-            AutomaticDecompression = DecompressionMethods.GZip
-                             | DecompressionMethods.Deflate
-        });
-
         private const string UserAgent = "bot by WeatherAPI";
 
         public static async Task<string> GetJmaXml(string link, int ntry = 0)
@@ -47,6 +41,7 @@ namespace JmaXmlClient.Models
             }
         }
 
+        /*
         public static async Task<XElement> GetJmaXElement(string link, string dir)
         {
             string xml = await GetJmaXml(link);
@@ -71,28 +66,6 @@ namespace JmaXmlClient.Models
 
             return xe;
         }
-
-        public static async Task<string> GetPullFeeds(string link, int ntry = 0)
-        {
-            Client1.DefaultRequestHeaders.Add("user-agent", UserAgent);
-            try
-            {
-                return await Client1.GetStringAsync(link);
-            }
-            catch (Exception e1)
-            {
-                if (ntry < 1)
-                {
-                    await Task.Delay(300);
-                    return await GetJmaXml(link, ++ntry);
-                }
-                else
-                {
-                    await Utils.WriteLog($"気象庁XMLデータ取得エラー url={link} メッセージ:{e1.Message}");
-                    return null;
-                }
-            }
-        }
-
+        */
     }
 }
