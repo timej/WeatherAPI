@@ -14,25 +14,25 @@ namespace JmaXmlClient.Models
 
         internal static async Task PullAsync()
         {
-            await Utils.WriteLog("PULL型の定時フィードの処理開始");
+            await Utils.WriteLog("PULL型のフィードの処理開始");
             await GetRegularFeeds("http://www.data.jma.go.jp/developer/xml/feed/regular.xml", false);
             //await GetExtraFeeds("http://www.data.jma.go.jp/developer/xml/feed/extra.xml", false);
-            await Utils.WriteLog("PULL型の定時フィードの処理終了");
+            await Utils.WriteLog("PULL型のフィードの処理終了");
         }
 
         internal static async Task PullLAsync()
         {
-            await Utils.WriteLog("PULL型の随時フィードの処理開始");
+            await Utils.WriteLog("PULL型のロングフィードの処理開始");
             await GetRegularFeeds("http://www.data.jma.go.jp/developer/xml/feed/regular_l.xml", true);
             //await GetExtraFeeds("http://www.data.jma.go.jp/developer/xml/feed/extra_l.xml", true);
-            await Utils.WriteLog("PULL型の随時フィードの処理終了");
+            await Utils.WriteLog("PULL型のロングフィードの処理終了");
         }
 
         static async Task GetRegularFeeds(string url, bool isLong)
         {
             try
             {
-                string xml = await JmaHttpClient.GetJmaXml(url);
+                string xml = await JmaHttpClient.GetPullFeeds(url);
                 XDocument xdoc = XDocument.Parse(xml);
 
                 string path = Path.Combine(AppIni.DataPath, "RegularFeedId.txt");
@@ -113,7 +113,7 @@ namespace JmaXmlClient.Models
         {
             try
             {
-                string xml = await JmaHttpClient.GetJmaXml(url);
+                string xml = await JmaHttpClient.GetPullFeeds(url);
                 XDocument xdoc = XDocument.Parse(xml);
 
                 string path = Path.Combine(AppIni.DataPath, "ExtraFeedId.txt");
