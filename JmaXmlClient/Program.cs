@@ -87,6 +87,11 @@ namespace JmaXmlClient
                 if (AppIni.IsUseDatastore)
                     JmaPull.PullAsync().GetAwaiter().GetResult();
             }
+            else if (args.Contains("-q"))
+            {
+                if (AppIni.IsUseDatastore)
+                    JmaPull.PullLAsync().GetAwaiter().GetResult();
+            }
             //XMLデータから天気予報のJsonデータの一括作成
             else if (args.Contains("-a"))
             {

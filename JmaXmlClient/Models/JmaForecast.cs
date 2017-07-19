@@ -92,8 +92,7 @@ namespace JmaXmlClient.Models
                         var forecastArea = JmaForecastArea.ForecastAreaOfStations;
                         var forecastAreaData = forecastArea.FirstOrDefault(x => x.観測所コード == forecast.StationCode);
 
-                        if(true)
-                        //if (forecastAreaData == null)
+                        if (forecastAreaData == null)
                         {
                             forecastAreaData = forecastArea.FirstOrDefault(x => x.地点 == forecast.StationName && x.気象区コード / 1000 == pref);
                             if (forecastAreaData == null)
