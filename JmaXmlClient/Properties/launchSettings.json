@@ -2,7 +2,9 @@
   "profiles": {
     "JmaXmlClient": {
       "commandName": "Project",
-      "commandLineArgs": "-q"
+      "environmentVariables": {
+        "GOOGLE_APPLICATION_CREDENTIALS": "C:\\Users\\Admin\\Google\\awoni-b16701fa46ac.json"
+      }
     }
   }
 }

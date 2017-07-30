@@ -151,7 +151,7 @@ namespace JmaXmlClient
 #if !DEBUG
             await Utils.WriteLog("開始");
 #endif
-
+    
             int office = 360;
             var datastore = new JmaDatastore(AppIni.ProjectId);
             string xml = await datastore.GetJmaXmlAsync("vpfd50", office);

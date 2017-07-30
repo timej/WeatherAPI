@@ -4,6 +4,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Google.Cloud.Datastore.V1;
 using System.Linq;
+using Google.Apis.Auth.OAuth2;
 
 namespace JmaXml.Common
 {
