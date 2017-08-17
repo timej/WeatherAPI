@@ -13,7 +13,7 @@ namespace JmaXmlServer
         {
             var host = new WebHostBuilder()
                 .UseKestrel()
-                .UseUrls("http://127.0.0.1:5031")
+                .UseUrls("http://127.0.0.1:5030")
                 .UseContentRoot(Directory.GetCurrentDirectory())
                 .UseIISIntegration()
                 .UseStartup<Startup>()
