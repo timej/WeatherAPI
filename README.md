@@ -36,6 +36,8 @@ C# + .NET Core で作成しています。Linux でも Windows でも動作し�
 
 Google Cloud Datastore を使うようにした理由は、このプログラムを動かすためにはサーバーが必要ですが、GCPには無料枠があって、この程度のプログラムであれば無料で試せるためです。GCP の Compute Engine には Always Free があって、米国リージョンを使えば f1-micro インスタンスが1インスタンス無料で使えます。米国リージョンの中では日本に近いオレゴン（us-west1）リージョンを使うのがベターです。Google Cloud Datastore にも無料枠があります。 
 
-### 参考
+### 天気アイコン
 
 OSSの天気アイコン https://erikflowers.github.io/weather-icons/
+
+SDR: [12+ Free Weather Icon Sets for your Apps & Websites](https://superdevresources.com/free-weather-icon-sets-apps/)
